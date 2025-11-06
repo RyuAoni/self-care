@@ -1,0 +1,56 @@
+# Node modules（ライブラリ群）
+node_modules/
+
+# Expo / Metro / React Native cache
+.expo/
+.expo-shared/
+.packager/
+__generated__/
+dist/
+web-build/
+ios/build/
+android/build/
+android/app/build/
+.expo-dev/
+.expo/web/
+
+# OS固有ファイル
+.DS_Store
+Thumbs.db
+
+# npm / yarn ログファイル
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# バンドル済み成果物
+*.jsbundle
+*.map
+
+# dotenv（APIキーなど）
+.env
+.env.local
+.env.*.local
+
+# VSCode設定（チーム全員で共有しない場合）
+.vscode/
+
+# macOS Finderのmetadata
+*.swp
+*.swo
+*.orig
+
+# Expo prebuild output（EAS buildなど）
+build/
+expo-build/
+
+# Android Studio / Xcode用
+.idea/
+.gradle/
+*.iml
+Pods/
+Podfile.lock
+
+# temporary files
+tmp/
+temp/
