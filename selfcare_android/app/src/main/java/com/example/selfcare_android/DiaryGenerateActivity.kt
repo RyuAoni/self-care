@@ -1,6 +1,8 @@
-package com.example.selfcare_android // 修正点 1
+package com.example.selfcare_android
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
@@ -8,8 +10,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
-class DiaryGenerateActivity : AppCompatActivity() { // 修正点 2
+//  日記生成画面
+class DiaryGenerateActivity : AppCompatActivity() {
 
+    // UI部品
     private lateinit var btnClose: ImageButton
     private lateinit var tvTitle: TextView
     private lateinit var etDiaryContent: EditText
@@ -22,17 +26,14 @@ class DiaryGenerateActivity : AppCompatActivity() { // 修正点 2
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_diary_generate) // 修正点 3
+        setContentView(R.layout.activity_diary_generate) // レイアウト適用
 
-        // ビューの初期化
-        initViews()
-
-        // イベントリスナーの設定
-        setupListeners()
+        initViews()       // UI初期化
+        setupListeners()  // ボタン動作設定
     }
 
+    // UI部品をIDと結びつける
     private fun initViews() {
-        // IDは activity_diary_generate.xml と一致しているため、ここは修正不要です
         btnClose = findViewById(R.id.btnClose)
         tvTitle = findViewById(R.id.tvTitle)
         etDiaryContent = findViewById(R.id.etDiaryContent)
@@ -44,58 +45,40 @@ class DiaryGenerateActivity : AppCompatActivity() { // 修正点 2
         btnProfile = findViewById(R.id.btnProfile)
     }
 
+    // 各ボタンのクリック処理
     private fun setupListeners() {
-        // 閉じるボタン
-        btnClose.setOnClickListener {
-            finish()
-        }
+        btnClose.setOnClickListener { finish() } // 閉じる
 
-        // 画像ボタン
         btnImage.setOnClickListener {
             Toast.makeText(this, "画像を追加", Toast.LENGTH_SHORT).show()
-            // 画像選択の処理を追加
         }
 
-        // 編集ボタン
         btnEdit.setOnClickListener {
             Toast.makeText(this, "編集モード", Toast.LENGTH_SHORT).show()
-            // 編集モードの処理を追加
         }
 
-        // 保存ボタン
-        btnSave.setOnClickListener {
-            saveDiary()
-        }
+        btnSave.setOnClickListener { saveDiary() }
 
-        // 統計ボタン
         btnStats.setOnClickListener {
             Toast.makeText(this, "統計画面", Toast.LENGTH_SHORT).show()
-            // 統計画面への遷移処理
         }
 
-        // カレンダーボタン
         btnCalendar.setOnClickListener {
             Toast.makeText(this, "カレンダー画面", Toast.LENGTH_SHORT).show()
-            // カレンダー画面への遷移処理
         }
 
-        // プロフィールボタン
         btnProfile.setOnClickListener {
             Toast.makeText(this, "プロフィール画面", Toast.LENGTH_SHORT).show()
-            // プロフィール画面への遷移処理
         }
     }
 
+    // 日記保存処理
     private fun saveDiary() {
         val content = etDiaryContent.text.toString()
 
         if (content.isNotEmpty()) {
-            // 保存
             Toast.makeText(this, "日記を保存しました", Toast.LENGTH_SHORT).show()
-
-            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                finish()
-            }, 2000) // 2000ミリ秒 = 2秒
+            Handler(Looper.getMainLooper()).postDelayed({ finish() }, 2000)
         } else {
             Toast.makeText(this, "内容を入力してください", Toast.LENGTH_SHORT).show()
         }

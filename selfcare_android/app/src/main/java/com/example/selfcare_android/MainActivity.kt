@@ -5,25 +5,29 @@ import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 
+//仮のホーム画面
+// メイン画面（トップ画面）
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var btnGoToGenerate: Button
+    private lateinit var btnGoToGenerate: Button // 日記作成ボタン
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        initViews()
-        setupListeners()
+        initViews()       // UI初期化
+        setupListeners()  // ボタンの動作設定
     }
 
+    // UI部品をIDと関連付け
     private fun initViews() {
-        btnGoToGenerate = findViewById<Button>(R.id.btnGoToGenerate)
+        btnGoToGenerate = findViewById(R.id.btnGoToGenerate)
     }
 
+    // ボタンのクリック処理
     private fun setupListeners() {
-        // 日記生成画面への遷移
         btnGoToGenerate.setOnClickListener {
+            // 日記生成画面へ遷移
             val intent = Intent(this, DiaryGenerateActivity::class.java)
             startActivity(intent)
         }

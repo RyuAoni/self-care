@@ -3,7 +3,7 @@
 <!-- 生成された日記のあるブロックのためのファイル -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-
+<!-- 灰色のブロックを作成 -->
     <solid android:color="#D3D3D3" />
 
     <corners android:radius="8dp" />
