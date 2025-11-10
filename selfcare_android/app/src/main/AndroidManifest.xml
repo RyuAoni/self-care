@@ -11,6 +11,10 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Selfcare_android">
+        <activity android:name=".SettingsDetailActivity"/>
+        <activity android:name=".AlbumActivity"/>
+        <activity android:name=".WeeklyLetterActivity"/>
+        <activity android:name=".SettingsActivity"/>
         <activity
             android:name=".MainActivity"
             android:exported="true">
