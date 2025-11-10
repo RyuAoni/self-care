@@ -5,10 +5,14 @@ import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 
+//仮のホーム画面
+// メイン画面（トップ画面）
 class MainActivity : AppCompatActivity() {
+
+    private lateinit var btnGoToGenerate: Button // 日記作成ボタン
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         // activity_main.xml を読み込む
         setContentView(R.layout.activity_main)
 
