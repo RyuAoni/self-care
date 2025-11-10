@@ -1,20 +1,25 @@
 package com.example.selfcare_android
 
+import android.content.Intent
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
+import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
+        // activity_main.xml を読み込む
         setContentView(R.layout.activity_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+
+        // 「日記入力画面へ」ボタン（ID: button_start_diary）を取得
+        val startDiaryButton: Button = findViewById(R.id.button_start_diary)
+
+        // ボタンがクリックされたときの処理を設定
+        startDiaryButton.setOnClickListener {
+            // DiaryInputActivityに遷移するためのIntentを作成し、起動
+            val intent = Intent(this, DiaryInputActivity::class.java)
+            startActivity(intent)
         }
     }
 }
