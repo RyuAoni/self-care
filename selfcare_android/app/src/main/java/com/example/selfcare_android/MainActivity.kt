@@ -13,22 +13,16 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // activity_main.xml を読み込む
         setContentView(R.layout.activity_main)
 
-        initViews()       // UI初期化
-        setupListeners()  // ボタンの動作設定
-    }
+        // 「日記入力画面へ」ボタン（ID: button_start_diary）を取得
+        val startDiaryButton: Button = findViewById(R.id.button_start_diary)
 
-    // UI部品をIDと関連付け
-    private fun initViews() {
-        btnGoToGenerate = findViewById(R.id.btnGoToGenerate)
-    }
-
-    // ボタンのクリック処理
-    private fun setupListeners() {
-        btnGoToGenerate.setOnClickListener {
-            // 日記生成画面へ遷移
-            val intent = Intent(this, DiaryGenerateActivity::class.java)
+        // ボタンがクリックされたときの処理を設定
+        startDiaryButton.setOnClickListener {
+            // DiaryInputActivityに遷移するためのIntentを作成し、起動
+            val intent = Intent(this, DiaryInputActivity::class.java)
             startActivity(intent)
         }
     }

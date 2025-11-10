@@ -24,11 +24,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <!--「日記作成画面」アクティビティ -->
         <activity
             android:name=".DiaryGenerateActivity"
             android:exported="false" />
+        <activity
+            android:name=".DiaryInputActivity"
+            android:exported="false"
+            android:label="日記入力" />
     </application>
 
 </manifest>
