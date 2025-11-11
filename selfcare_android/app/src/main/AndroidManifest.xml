@@ -19,7 +19,7 @@
 
         <!--  アプリの起動時に最初に開かれる画面 -->
         <activity
-            android:name=".MainActivity"
+            android:name=".CalendarActivity"
             android:exported="true">
             <intent-filter>
                 <!-- アプリのエントリーポイント（起動アクション） -->

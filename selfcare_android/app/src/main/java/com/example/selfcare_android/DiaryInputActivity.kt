@@ -1,8 +1,11 @@
 package com.example.selfcare_android
 
 import android.os.Bundle
+import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -12,17 +15,39 @@ class DiaryInputActivity : AppCompatActivity() {
 
     private lateinit var messageAdapter: MessageAdapter
     private val messageList = LinkedList<Message>()
+    private var year: Int = 0
+    private var month: Int = 0
+    private var day: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_diary_input)
 
+        // 日付情報を取得
+        year = intent.getIntExtra("year", 0)
+        month = intent.getIntExtra("month", 0)
+        day = intent.getIntExtra("day", 0)
+
         // UIコンポーネントの取得
         val recyclerView: RecyclerView = findViewById(R.id.chat_history_view)
         val inputField: EditText = findViewById(R.id.message_input_field)
         val sendButton: ImageButton = findViewById(R.id.image_button_send)
-        // ※ activity_diary_input.xml の送信ボタンにIDを付けていないため、
-        // 仮にR.id.image_button_sendとします。IDが異なる場合は修正が必要です。
+        val saveButton: Button = findViewById(R.id.saveButton)
+        val closeButton: ImageButton = findViewById(R.id.closeButton)
+        val dateTitleText: TextView = findViewById(R.id.dateTitleText)
+
+        // 日付をヘッダーに表示
+        dateTitleText.text = "${month + 1}月${day}日の日記"
+
+        // 閉じるボタン
+        closeButton.setOnClickListener {
+            finish()
+        }
+
+        // 保存ボタン
+        saveButton.setOnClickListener {
+            saveDiary()
+        }
 
         // --- RecyclerViewの設定 ---
         messageAdapter = MessageAdapter(messageList)
@@ -31,12 +56,17 @@ class DiaryInputActivity : AppCompatActivity() {
         }
         recyclerView.adapter = messageAdapter
 
+        // 既存の日記を読み込む
+        loadExistingDiary()
+
         // --- 初期メッセージ（AIからの導入メッセージ） ---
-        val initialMessage = Message(
-            text = "AI日記アシスタントです。今日はどんな一日でしたか？会話形式で教えてください。",
-            type = MESSAGE_TYPE_AI
-        )
-        messageAdapter.addMessage(initialMessage)
+        if (messageList.isEmpty()) {
+            val initialMessage = Message(
+                text = "AI日記アシスタントです。今日はどんな一日でしたか？会話形式で教えてください。",
+                type = MESSAGE_TYPE_AI
+            )
+            messageAdapter.addMessage(initialMessage)
+        }
 
         // --- 送信ボタンのクリック処理（文字送信機能のコア） ---
         sendButton.setOnClickListener {
@@ -55,6 +85,9 @@ class DiaryInputActivity : AppCompatActivity() {
                 handleAiResponse(text)
             }
         }
+
+        // ボトムナビゲーション設定
+        setupBottomNavigation()
     }
 
     // AIの応答を処理するメソッド (API実装の置き換え場所)
@@ -70,5 +103,60 @@ class DiaryInputActivity : AppCompatActivity() {
 
         // 最新のメッセージにスクロール
         findViewById<RecyclerView>(R.id.chat_history_view).scrollToPosition(messageAdapter.itemCount - 1)
+    }
+
+    private fun loadExistingDiary() {
+        val prefs = getSharedPreferences("DiaryData", MODE_PRIVATE)
+        val key = "${year}_${month}_${day}"
+
+        // 保存されたメッセージ数を取得
+        val messageCount = prefs.getInt("${key}_count", 0)
+
+        // メッセージを読み込む
+        for (i in 0 until messageCount) {
+            val text = prefs.getString("${key}_msg_${i}_text", "") ?: ""
+            val type = prefs.getInt("${key}_msg_${i}_type", MESSAGE_TYPE_USER)
+            if (text.isNotEmpty()) {
+                messageList.add(Message(text = text, type = type))
+            }
+        }
+
+        if (messageList.isNotEmpty()) {
+            messageAdapter.notifyDataSetChanged()
+        }
+    }
+
+    private fun saveDiary() {
+        val prefs = getSharedPreferences("DiaryData", MODE_PRIVATE)
+        val editor = prefs.edit()
+        val key = "${year}_${month}_${day}"
+
+        // メッセージ数を保存
+        editor.putInt("${key}_count", messageList.size)
+
+        // 各メッセージを保存
+        messageList.forEachIndexed { index, message ->
+            editor.putString("${key}_msg_${index}_text", message.text)
+            editor.putInt("${key}_msg_${index}_type", message.type)
+        }
+
+        editor.apply()
+
+        Toast.makeText(this, "日記を保存しました", Toast.LENGTH_SHORT).show()
+        finish()
+    }
+
+    private fun setupBottomNavigation() {
+        findViewById<ImageButton>(R.id.navStatsButton).setOnClickListener {
+            Toast.makeText(this, "統計", Toast.LENGTH_SHORT).show()
+        }
+
+        findViewById<ImageButton>(R.id.navDiaryButton).setOnClickListener {
+            // 現在の画面
+        }
+
+        findViewById<ImageButton>(R.id.navProfileButton).setOnClickListener {
+            Toast.makeText(this, "プロフィール", Toast.LENGTH_SHORT).show()
+        }
     }
 }
