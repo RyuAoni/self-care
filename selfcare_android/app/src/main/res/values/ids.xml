@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="nameText" type="id" />
+    <item name="profileImage" type="id" />
+    <item name="weeklyLetterButton" type="id" />
+    <item name="albumButton" type="id" />
+    <item name="settingsButton" type="id" />
+    <item name="navStats" type="id" />
+    <item name="navCalendar" type="id" />
+    <item name="navProfile" type="id" />
+</resources>
