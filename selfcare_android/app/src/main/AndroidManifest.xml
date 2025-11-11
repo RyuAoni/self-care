@@ -15,7 +15,7 @@
 
         <!--  アプリの起動時に最初に開かれる画面 -->
         <activity
-            android:name=".MainActivity"
+            android:name=".DiaryGenerateActivity"
             android:exported="true">
             <intent-filter>
                 <!-- アプリのエントリーポイント（起動アクション） -->
@@ -25,9 +25,6 @@
             </intent-filter>
         </activity>
         <!--「日記作成画面」アクティビティ -->
-        <activity
-            android:name=".DiaryGenerateActivity"
-            android:exported="false" />
         <activity
             android:name=".DiaryInputActivity"
             android:exported="false"

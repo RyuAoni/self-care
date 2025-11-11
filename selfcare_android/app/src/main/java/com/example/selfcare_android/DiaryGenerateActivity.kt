@@ -20,9 +20,6 @@ class DiaryGenerateActivity : AppCompatActivity() {
     private lateinit var btnImage: ImageButton
     private lateinit var btnEdit: ImageButton
     private lateinit var btnSave: Button
-    private lateinit var btnStats: ImageButton
-    private lateinit var btnCalendar: ImageButton
-    private lateinit var btnProfile: ImageButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,9 +37,6 @@ class DiaryGenerateActivity : AppCompatActivity() {
         btnImage = findViewById(R.id.btnImage)
         btnEdit = findViewById(R.id.btnEdit)
         btnSave = findViewById(R.id.btnSave)
-        btnStats = findViewById(R.id.btnStats)
-        btnCalendar = findViewById(R.id.btnCalendar)
-        btnProfile = findViewById(R.id.btnProfile)
     }
 
     // 各ボタンのクリック処理
@@ -58,18 +52,6 @@ class DiaryGenerateActivity : AppCompatActivity() {
         }
 
         btnSave.setOnClickListener { saveDiary() }
-
-        btnStats.setOnClickListener {
-            Toast.makeText(this, "統計画面", Toast.LENGTH_SHORT).show()
-        }
-
-        btnCalendar.setOnClickListener {
-            Toast.makeText(this, "カレンダー画面", Toast.LENGTH_SHORT).show()
-        }
-
-        btnProfile.setOnClickListener {
-            Toast.makeText(this, "プロフィール画面", Toast.LENGTH_SHORT).show()
-        }
     }
 
     // 日記保存処理
@@ -78,7 +60,7 @@ class DiaryGenerateActivity : AppCompatActivity() {
 
         if (content.isNotEmpty()) {
             Toast.makeText(this, "日記を保存しました", Toast.LENGTH_SHORT).show()
-            Handler(Looper.getMainLooper()).postDelayed({ finish() }, 2000)
+            //Handler(Looper.getMainLooper()).postDelayed({ finish() }, 2000)
         } else {
             Toast.makeText(this, "内容を入力してください", Toast.LENGTH_SHORT).show()
         }
