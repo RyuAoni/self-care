@@ -11,6 +11,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import java.util.Calendar
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class SettingsDetailActivity : AppCompatActivity() {
 
@@ -22,6 +24,7 @@ class SettingsDetailActivity : AppCompatActivity() {
     private lateinit var editEmail: EditText
     private lateinit var editHobby: EditText
     private lateinit var editFavorite: EditText
+    private val repository by lazy { DataRepository(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
