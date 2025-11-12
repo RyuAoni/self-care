@@ -16,8 +16,8 @@
         <activity android:name=".AlbumActivity"/>
         <activity android:name=".WeeklyLetterActivity"/>
         <activity android:name=".SettingsActivity"/>
-
-        <!--  アプリの起動時に最初に開かれる画面 -->
+        <activity android:name=".DiaryGenerateActivity"/>
+        <!--  アプリの起動時に最初に開かれる画-->
         <activity
             android:name=".CalendarActivity"
             android:exported="true">
@@ -29,9 +29,6 @@
             </intent-filter>
         </activity>
         <!--「日記作成画面」アクティビティ -->
-        <activity
-            android:name=".DiaryGenerateActivity"
-            android:exported="false" />
         <activity
             android:name=".DiaryInputActivity"
             android:exported="false"

@@ -1,5 +1,7 @@
 package com.example.selfcare_android
 
+//画面遷移(Intent)とフッター(BottomNavigationView)のためにインポート
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -9,6 +11,7 @@ import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
 //  日記生成画面
 class DiaryGenerateActivity : AppCompatActivity() {
@@ -20,9 +23,7 @@ class DiaryGenerateActivity : AppCompatActivity() {
     private lateinit var btnImage: ImageButton
     private lateinit var btnEdit: ImageButton
     private lateinit var btnSave: Button
-    private lateinit var btnStats: ImageButton
-    private lateinit var btnCalendar: ImageButton
-    private lateinit var btnProfile: ImageButton
+    private lateinit var bottomNav: BottomNavigationView //フッターの宣言
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,9 +41,9 @@ class DiaryGenerateActivity : AppCompatActivity() {
         btnImage = findViewById(R.id.btnImage)
         btnEdit = findViewById(R.id.btnEdit)
         btnSave = findViewById(R.id.btnSave)
-        btnStats = findViewById(R.id.btnStats)
-        btnCalendar = findViewById(R.id.btnCalendar)
-        btnProfile = findViewById(R.id.btnProfile)
+
+        // ★AI追加: フッターの初期化
+        bottomNav = findViewById(R.id.bottom_navigation)
     }
 
     // 各ボタンのクリック処理
@@ -59,16 +60,28 @@ class DiaryGenerateActivity : AppCompatActivity() {
 
         btnSave.setOnClickListener { saveDiary() }
 
-        btnStats.setOnClickListener {
-            Toast.makeText(this, "統計画面", Toast.LENGTH_SHORT).show()
-        }
-
-        btnCalendar.setOnClickListener {
-            Toast.makeText(this, "カレンダー画面", Toast.LENGTH_SHORT).show()
-        }
-
-        btnProfile.setOnClickListener {
-            Toast.makeText(this, "プロフィール画面", Toast.LENGTH_SHORT).show()
+        // フッターのクリック処理
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                // カレンダー
+                R.id.nav_calendar -> {
+                    // DiaryInputActivity への画面遷移
+                    val intent = Intent(this, DiaryInputActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                // 統計
+                R.id.nav_stats -> {
+                    Toast.makeText(this, "統計画面", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                // プロフィール
+                R.id.nav_profile -> {
+                    Toast.makeText(this, "プロフィール画面", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                else -> false
+            }
         }
     }
 
@@ -78,7 +91,7 @@ class DiaryGenerateActivity : AppCompatActivity() {
 
         if (content.isNotEmpty()) {
             Toast.makeText(this, "日記を保存しました", Toast.LENGTH_SHORT).show()
-            Handler(Looper.getMainLooper()).postDelayed({ finish() }, 2000)
+            // Handler(Looper.getMainLooper()).postDelayed({ finish() }, 2000)
         } else {
             Toast.makeText(this, "内容を入力してください", Toast.LENGTH_SHORT).show()
         }
