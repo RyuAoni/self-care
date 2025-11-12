@@ -43,10 +43,10 @@
                 android:id="@+id/profileImage"
                 android:layout_width="80dp"
                 android:layout_height="80dp"
-                android:src="@drawable/ic_launcher_foreground"
+                android:layout_marginEnd="16dp"
                 android:background="@drawable/circle_background"
                 android:scaleType="centerCrop"
-                android:layout_marginEnd="16dp"/>
+                android:src="@drawable/ic_launcher_foreground" />
 
             <!-- 名前 -->
             <TextView
@@ -54,8 +54,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="名前 はるさめべーこん"
-                android:textSize="18sp"
-                android:textColor="#000000"/>
+                android:textColor="#000000"
+                android:textSize="18sp" />
         </LinearLayout>
 
         <!-- メニューセクション -->
@@ -74,17 +74,17 @@
                 android:layout_width="match_parent"
                 android:layout_height="120dp"
                 android:layout_marginBottom="24dp"
+                app:cardBackgroundColor="#FFFFFF"
                 app:cardCornerRadius="60dp"
-                app:cardElevation="8dp"
-                app:cardBackgroundColor="#FFFFFF">
+                app:cardElevation="8dp">
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:gravity="center"
                     android:text="週次お手紙"
-                    android:textSize="20sp"
                     android:textColor="#000000"
-                    android:gravity="center"/>
+                    android:textSize="20sp" />
             </androidx.cardview.widget.CardView>
 
             <!-- アルバムボタン -->
@@ -93,17 +93,17 @@
                 android:layout_width="match_parent"
                 android:layout_height="120dp"
                 android:layout_marginBottom="24dp"
+                app:cardBackgroundColor="#FFFFFF"
                 app:cardCornerRadius="60dp"
-                app:cardElevation="8dp"
-                app:cardBackgroundColor="#FFFFFF">
+                app:cardElevation="8dp">
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:gravity="center"
                     android:text="アルバム"
-                    android:textSize="20sp"
                     android:textColor="#000000"
-                    android:gravity="center"/>
+                    android:textSize="20sp" />
             </androidx.cardview.widget.CardView>
 
             <!-- 設定ボタン -->
@@ -111,55 +111,28 @@
                 android:id="@+id/settingsButton"
                 android:layout_width="match_parent"
                 android:layout_height="120dp"
+                app:cardBackgroundColor="#FFFFFF"
                 app:cardCornerRadius="60dp"
-                app:cardElevation="8dp"
-                app:cardBackgroundColor="#FFFFFF">
+                app:cardElevation="8dp">
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:gravity="center"
                     android:text="設定"
-                    android:textSize="20sp"
                     android:textColor="#000000"
-                    android:gravity="center"/>
+                    android:textSize="20sp" />
             </androidx.cardview.widget.CardView>
         </LinearLayout>
 
         <!-- ボトムナビゲーション -->
-        <LinearLayout
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottom_navigation"
             android:layout_width="match_parent"
-            android:layout_height="80dp"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:background="#9E9E9E"
-            android:paddingVertical="8dp">
-
-            <ImageView
-                android:id="@+id/navStats"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:src="@android:drawable/ic_menu_report_image"
-                android:scaleType="centerInside"
-                android:padding="8dp"/>
-
-            <ImageView
-                android:id="@+id/navCalendar"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:src="@android:drawable/ic_menu_today"
-                android:scaleType="centerInside"
-                android:padding="8dp"/>
-
-            <ImageView
-                android:id="@+id/navProfile"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:src="@android:drawable/ic_menu_myplaces"
-                android:scaleType="centerInside"
-                android:padding="8dp"/>
-        </LinearLayout>
+            android:layout_height="wrap_content"
+            android:background="#C5C8A4"
+            app:itemIconTint="@android:color/black"
+            app:itemTextColor="@android:color/black"
+            app:menu="@menu/bottom_nav_menu" />
     </LinearLayout>
 </FrameLayout>

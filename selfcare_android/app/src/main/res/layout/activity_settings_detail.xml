@@ -276,44 +276,13 @@
     </ScrollView>
 
     <!-- ボトムナビゲーション -->
-    <LinearLayout
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation"
         android:layout_width="match_parent"
-        android:layout_height="72dp"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:background="#C5D6A8"
-        android:elevation="8dp">
-
-        <ImageView
-            android:id="@+id/navStats"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:src="@android:drawable/ic_menu_report_image"
-            android:scaleType="centerInside"
-            android:padding="16dp"
-            app:tint="#5D4E37" />
-
-        <ImageView
-            android:id="@+id/navCalendar"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:src="@android:drawable/ic_menu_today"
-            android:scaleType="centerInside"
-            android:padding="16dp"
-            app:tint="#5D4E37"/>
-
-        <ImageView
-            android:id="@+id/navProfile"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:src="@android:drawable/ic_menu_myplaces"
-            android:scaleType="centerInside"
-            android:padding="16dp"
-            app:tint="#5D4E37"/>
-
-    </LinearLayout>
+        android:layout_height="wrap_content"
+        android:background="#C5C8A4"
+        app:itemIconTint="@android:color/black"
+        app:itemTextColor="@android:color/black"
+        app:menu="@menu/bottom_nav_menu" />
 
 </LinearLayout>

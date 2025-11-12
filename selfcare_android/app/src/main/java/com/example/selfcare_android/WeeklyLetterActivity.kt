@@ -1,5 +1,6 @@
 package com.example.selfcare_android
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.ImageView
 import android.widget.Toast
@@ -11,6 +12,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class WeeklyLetterActivity : AppCompatActivity() {
@@ -70,18 +72,34 @@ class WeeklyLetterActivity : AppCompatActivity() {
     }
 
     private fun setupBottomNavigation() {
-        findViewById<ImageView>(R.id.navStats).setOnClickListener {
-            // TODO: 統計画面へ遷移
-            Toast.makeText(this, "統計画面", Toast.LENGTH_SHORT).show()
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+        // 初期選択を解除する
+        bottomNav.menu.setGroupCheckable(0, true, false)
+        for (i in 0 until bottomNav.menu.size()) {
+            bottomNav.menu.getItem(i).isChecked = false
         }
+        bottomNav.menu.setGroupCheckable(0, true, true)
 
-        findViewById<ImageView>(R.id.navCalendar).setOnClickListener {
-            // TODO: カレンダー画面へ遷移
-            Toast.makeText(this, "カレンダー画面", Toast.LENGTH_SHORT).show()
-        }
 
-        findViewById<ImageView>(R.id.navProfile).setOnClickListener {
-            finish()
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_stats -> {
+                    val intent = Intent(this, EmotionAnalysisActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                R.id.nav_calendar -> {
+                    val intent = Intent(this, CalendarActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                R.id.nav_profile -> {
+                    val intent = Intent(this, SettingsActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                else -> false
+            }
         }
     }
 }

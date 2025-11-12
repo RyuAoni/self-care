@@ -1,5 +1,6 @@
 package com.example.selfcare_android
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.AdapterView
@@ -10,6 +11,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import java.util.Calendar
 
 class SettingsDetailActivity : AppCompatActivity() {
@@ -149,16 +151,34 @@ class SettingsDetailActivity : AppCompatActivity() {
     }
 
     private fun setupBottomNavigation() {
-        findViewById<ImageView>(R.id.navStats).setOnClickListener {
-            Toast.makeText(this, "統計", Toast.LENGTH_SHORT).show()
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+        // 初期選択を解除する
+        bottomNav.menu.setGroupCheckable(0, true, false)
+        for (i in 0 until bottomNav.menu.size()) {
+            bottomNav.menu.getItem(i).isChecked = false
         }
+        bottomNav.menu.setGroupCheckable(0, true, true)
 
-        findViewById<ImageView>(R.id.navCalendar).setOnClickListener {
-            Toast.makeText(this, "カレンダー", Toast.LENGTH_SHORT).show()
-        }
 
-        findViewById<ImageView>(R.id.navProfile).setOnClickListener {
-            Toast.makeText(this, "プロフィール", Toast.LENGTH_SHORT).show()
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_stats -> {
+                    val intent = Intent(this, EmotionAnalysisActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                R.id.nav_calendar -> {
+                    val intent = Intent(this, CalendarActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                R.id.nav_profile -> {
+                    val intent = Intent(this, SettingsActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                else -> false
+            }
         }
     }
 
