@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -40,23 +41,27 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupBottomNavigation() {
-        // 統計アイコン
-        findViewById<ImageView>(R.id.navStats).setOnClickListener {
-            // TODO: 統計画面へ遷移
-            // startActivity(Intent(this, StatsActivity::class.java))
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_stats -> {
+                    val intent = Intent(this, EmotionAnalysisActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                R.id.nav_calendar -> {
+                    val intent = Intent(this, CalendarActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                R.id.nav_profile -> {
+                    true
+                }
+                else -> false
+            }
         }
-
-        // カレンダーアイコン
-        findViewById<ImageView>(R.id.navCalendar).setOnClickListener {
-            // TODO: カレンダー画面へ遷移
-            // startActivity(Intent(this, CalendarActivity::class.java))
-        }
-
-        // プロフィールアイコン
-        findViewById<ImageView>(R.id.navProfile).setOnClickListener {
-            // TODO: プロフィール画面へ遷移
-            // startActivity(Intent(this, ProfileActivity::class.java))
-        }
+        // profileを選択状態にする
+        bottomNav.selectedItemId = R.id.nav_profile
     }
 
     override fun onResume() {

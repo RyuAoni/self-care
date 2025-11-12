@@ -9,59 +9,68 @@
     <!-- 月表示エリア -->
     <LinearLayout
         android:id="@+id/monthHeader"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="16dp"
-        app:layout_constraintTop_toTopOf="parent">
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp"
+        android:background="?attr/colorSurface"
+        android:elevation="2dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <ImageView
             android:id="@+id/prevMonthButton"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:src="@android:drawable/ic_media_previous"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="前の月"/>
+            android:contentDescription="前の月"
+            app:tint="@android:color/black"/>
 
         <TextView
             android:id="@+id/monthYearText"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="1月"
-            android:textSize="24sp"
+            android:text="2025年 1月"
+            android:textSize="20sp"
             android:textColor="#000000"
             android:textStyle="bold"
             android:gravity="center"/>
 
         <ImageView
             android:id="@+id/nextMonthButton"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:src="@android:drawable/ic_media_next"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="次の月"/>
-
+            android:contentDescription="次の月"
+            app:tint="@android:color/black"/>
     </LinearLayout>
 
     <!-- 曜日ヘッダー -->
     <LinearLayout
         android:id="@+id/weekDayHeader"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:paddingHorizontal="8dp"
         android:paddingVertical="8dp"
-        app:layout_constraintTop_toBottomOf="@id/monthHeader">
+        app:layout_constraintTop_toBottomOf="@id/monthHeader"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
+        <!-- 日〜土 -->
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="日"
-            android:textSize="12sp"
-            android:textColor="#FF5252"
+            android:textSize="13sp"
+            android:textColor="#E53935"
             android:gravity="center"/>
 
         <TextView
@@ -69,8 +78,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="月"
-            android:textSize="12sp"
-            android:textColor="#666666"
+            android:textSize="13sp"
+            android:textColor="#444444"
             android:gravity="center"/>
 
         <TextView
@@ -78,8 +87,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="火"
-            android:textSize="12sp"
-            android:textColor="#666666"
+            android:textSize="13sp"
+            android:textColor="#444444"
             android:gravity="center"/>
 
         <TextView
@@ -87,8 +96,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="水"
-            android:textSize="12sp"
-            android:textColor="#666666"
+            android:textSize="13sp"
+            android:textColor="#444444"
             android:gravity="center"/>
 
         <TextView
@@ -96,8 +105,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="木"
-            android:textSize="12sp"
-            android:textColor="#666666"
+            android:textSize="13sp"
+            android:textColor="#444444"
             android:gravity="center"/>
 
         <TextView
@@ -105,8 +114,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="金"
-            android:textSize="12sp"
-            android:textColor="#666666"
+            android:textSize="13sp"
+            android:textColor="#444444"
             android:gravity="center"/>
 
         <TextView
@@ -114,62 +123,32 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="土"
-            android:textSize="12sp"
-            android:textColor="#2196F3"
+            android:textSize="13sp"
+            android:textColor="#1E88E5"
             android:gravity="center"/>
-
     </LinearLayout>
 
     <!-- カレンダーグリッド -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/calendarRecyclerView"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
         android:padding="8dp"
         app:layout_constraintTop_toBottomOf="@id/weekDayHeader"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigation"/>
+        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <!-- ボトムナビゲーション -->
-    <LinearLayout
-        android:id="@+id/bottomNavigation"
-        android:layout_width="match_parent"
-        android:layout_height="72dp"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:background="#C5D6A8"
-        android:elevation="8dp"
-        app:layout_constraintBottom_toBottomOf="parent">
-
-        <ImageView
-            android:id="@+id/navStats"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:src="@android:drawable/ic_menu_report_image"
-            android:scaleType="centerInside"
-            android:padding="16dp"
-            app:tint="#5D4E37"/>
-
-        <ImageView
-            android:id="@+id/navCalendar"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:src="@android:drawable/ic_menu_today"
-            android:scaleType="centerInside"
-            android:padding="16dp"
-            app:tint="#5D4E37"/>
-
-        <ImageView
-            android:id="@+id/navProfile"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:src="@android:drawable/ic_menu_myplaces"
-            android:scaleType="centerInside"
-            android:padding="16dp"
-            app:tint="#5D4E37"/>
-
-    </LinearLayout>
-
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="#C5C8A4"
+        app:itemIconTint="@android:color/black"
+        app:itemTextColor="@android:color/black"
+        app:menu="@menu/bottom_nav_menu"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -7,10 +7,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import java.util.*
 
 class CalendarActivity : AppCompatActivity() {
@@ -57,19 +57,20 @@ class CalendarActivity : AppCompatActivity() {
     }
 
     private fun updateCalendar() {
-        // 月と年を表示
-        val monthName = "${calendar.get(Calendar.MONTH) + 1}月"
-        monthYearText.text = monthName
+        // 月と年を表示（例: 2025年 1月）
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH) + 1
+        monthYearText.text = "${year}年 ${month}月"
 
         // カレンダーのデータを生成
         days.clear()
 
-        val year = calendar.get(Calendar.YEAR)
-        val month = calendar.get(Calendar.MONTH)
+        val currentYear = calendar.get(Calendar.YEAR)
+        val currentMonth = calendar.get(Calendar.MONTH)
 
         // 月の最初の日
         val firstDayOfMonth = Calendar.getInstance()
-        firstDayOfMonth.set(year, month, 1)
+        firstDayOfMonth.set(currentYear, currentMonth, 1)
         val firstDayOfWeek = firstDayOfMonth.get(Calendar.DAY_OF_WEEK) - 1 // 日曜日=0
 
         // 月の日数
@@ -77,24 +78,24 @@ class CalendarActivity : AppCompatActivity() {
 
         // 前月の日付を追加（グレーアウト）
         val prevMonth = Calendar.getInstance()
-        prevMonth.set(year, month, 1)
+        prevMonth.set(currentYear, currentMonth, 1)
         prevMonth.add(Calendar.MONTH, -1)
         val maxDayInPrevMonth = prevMonth.getActualMaximum(Calendar.DAY_OF_MONTH)
 
         for (i in 0 until firstDayOfWeek) {
             val day = maxDayInPrevMonth - firstDayOfWeek + i + 1
-            days.add(CalendarDay(day, false, year, month - 1))
+            days.add(CalendarDay(day, false, currentYear, currentMonth - 1))
         }
 
         // 当月の日付を追加
         for (day in 1..maxDayInMonth) {
-            days.add(CalendarDay(day, true, year, month))
+            days.add(CalendarDay(day, true, currentYear, currentMonth))
         }
 
         // 次月の日付を追加（6週分になるように）
         val remainingDays = 42 - days.size // 6週 × 7日 = 42
         for (day in 1..remainingDays) {
-            days.add(CalendarDay(day, false, year, month + 1))
+            days.add(CalendarDay(day, false, currentYear, currentMonth + 1))
         }
 
         calendarAdapter.notifyDataSetChanged()
@@ -109,17 +110,27 @@ class CalendarActivity : AppCompatActivity() {
     }
 
     private fun setupBottomNavigation() {
-        findViewById<ImageView>(R.id.navStats).setOnClickListener {
-            Toast.makeText(this, "統計", Toast.LENGTH_SHORT).show()
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_stats -> {
+                    val intent = Intent(this, EmotionAnalysisActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                R.id.nav_calendar -> {
+                    true
+                }
+                R.id.nav_profile -> {
+                    val intent = Intent(this, SettingsActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                else -> false
+            }
         }
-
-        findViewById<ImageView>(R.id.navCalendar).setOnClickListener {
-            // 現在の画面なので何もしない
-        }
-
-        findViewById<ImageView>(R.id.navProfile).setOnClickListener {
-            finish()
-        }
+        // カレンダーを選択状態にする
+        bottomNav.selectedItemId = R.id.nav_calendar
     }
 }
 
