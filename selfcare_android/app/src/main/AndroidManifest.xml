@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Selfcare_android">
         <activity
-            android:name=".MainActivity"
+            android:name=".EmotionAnalysisActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

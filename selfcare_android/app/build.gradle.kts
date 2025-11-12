@@ -7,6 +7,11 @@ android {
     namespace = "com.example.selfcare_android"
     compileSdk = 36
 
+    buildFeatures {
+        viewBinding = true // Data Bindingではなく、View Bindingを使用する場合
+        // dataBinding = true // Data Bindingを使用する場合はこちら
+    }
+
     defaultConfig {
         applicationId = "com.example.selfcare_android"
         minSdk = 24
@@ -36,6 +41,7 @@ android {
 }
 
 dependencies {
+
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

@@ -1,6 +1,92 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".EmotionAnalysisActivity">
+
+    <TextView
+        android:id="@+id/titleTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="感情分析・歩数グラフ"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/controlsLayout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/titleTextView">
+
+        <Button
+            android:id="@+id/togglePeriodButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="期間: 1週間 / 1ヶ月"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            style="?attr/materialButtonOutlinedStyle" />
+
+        <Button
+            android:id="@+id/toggleCompositeScoreButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="スコア: 感情 / 総合"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            style="?attr/materialButtonOutlinedStyle" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/controlsLayout">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="感情スコアの推移"
+                android:textSize="18sp"
+                android:layout_marginBottom="8dp" />
+
+            <View
+                android:id="@+id/emotionChartView"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:background="#E6E0D8"
+                android:layout_marginBottom="24dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="身体活動（歩数）の推移"
+                android:textSize="18sp"
+                android:layout_marginBottom="8dp" />
+
+            <View
+                android:id="@+id/stepChartView"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:background="#E6E0D8" />
+        </LinearLayout>
+    </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
