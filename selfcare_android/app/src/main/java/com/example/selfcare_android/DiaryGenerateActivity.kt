@@ -83,7 +83,8 @@ class DiaryGenerateActivity : AppCompatActivity() {
                 }
                 // プロフィール
                 R.id.nav_profile -> {
-                    Toast.makeText(this, "プロフィール画面", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(this, SettingsActivity::class.java)
+                    startActivity(intent)
                     true
                 }
                 else -> false
