@@ -48,7 +48,7 @@ class DiaryInputActivity : AppCompatActivity() {
 
         // 保存ボタン
         saveButton.setOnClickListener {
-            saveDiary()
+            generateDiary()
         }
 
         // --- RecyclerViewの設定 ---
@@ -128,7 +128,7 @@ class DiaryInputActivity : AppCompatActivity() {
         }
     }
 
-    private fun saveDiary() {
+    private fun generateDiary() {
         val prefs = getSharedPreferences("DiaryData", MODE_PRIVATE)
         val editor = prefs.edit()
         val key = "${year}_${month}_${day}"
@@ -144,8 +144,12 @@ class DiaryInputActivity : AppCompatActivity() {
 
         editor.apply()
 
-        Toast.makeText(this, "日記を保存しました", Toast.LENGTH_SHORT).show()
-        finish()
+        // DiaryGenerateActivity に遷移
+        val intent = Intent(this, DiaryGenerateActivity::class.java)
+        intent.putExtra("year", year)
+        intent.putExtra("month", month)
+        intent.putExtra("day", day)
+        startActivity(intent)
     }
 
     private fun setupBottomNavigation() {

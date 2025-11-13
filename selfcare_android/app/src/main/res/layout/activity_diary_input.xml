@@ -47,7 +47,7 @@
             android:id="@+id/saveButton"
             android:layout_width="wrap_content"
             android:layout_height="36dp"
-            android:text="保存"
+            android:text="生成"
             android:backgroundTint="#8B4513"
             android:textColor="#FFFFFF"
             android:textStyle="bold"

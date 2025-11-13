@@ -17,6 +17,7 @@
         <activity android:name=".WeeklyLetterActivity"/>
         <activity android:name=".SettingsActivity"/>
         <activity android:name=".DiaryGenerateActivity"/>
+        <activity android:name=".DiaryDetailActivity"/>
         <!--  アプリの起動時に最初に開かれる画-->
         <activity
             android:name=".CalendarActivity"
