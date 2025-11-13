@@ -49,11 +49,26 @@ class CalendarActivity : AppCompatActivity() {
     private fun setupCalendar() {
         calendarRecyclerView.layoutManager = GridLayoutManager(this, 7)
         calendarAdapter = CalendarAdapter(days) { day ->
-            if (day.isCurrentMonth) {
+            // 当月かつ今日以前の日付のみクリック可能
+            if (day.isCurrentMonth && !isFutureDate(day)) {
                 openDayDetail(day)
             }
         }
         calendarRecyclerView.adapter = calendarAdapter
+    }
+
+    private fun isFutureDate(day: CalendarDay): Boolean {
+        val today = Calendar.getInstance()
+        val targetDate = Calendar.getInstance()
+        targetDate.set(day.year, day.month, day.day, 0, 0, 0)
+        targetDate.set(Calendar.MILLISECOND, 0)
+
+        today.set(Calendar.HOUR_OF_DAY, 0)
+        today.set(Calendar.MINUTE, 0)
+        today.set(Calendar.SECOND, 0)
+        today.set(Calendar.MILLISECOND, 0)
+
+        return targetDate.after(today)
     }
 
     private fun updateCalendar() {
@@ -102,12 +117,31 @@ class CalendarActivity : AppCompatActivity() {
     }
 
     private fun openDayDetail(day: CalendarDay) {
-        val intent = Intent(this, DiaryInputActivity::class.java)
+        val today = Calendar.getInstance()
+        val target = Calendar.getInstance().apply {
+            set(day.year, day.month, day.day, 0, 0, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        today.set(Calendar.HOUR_OF_DAY, 0)
+        today.set(Calendar.MINUTE, 0)
+        today.set(Calendar.SECOND, 0)
+        today.set(Calendar.MILLISECOND, 0)
+
+        val intent = if (target.before(today)) {
+            // 昨日以前 → DiaryDetailActivity
+            Intent(this, DiaryDetailActivity::class.java)
+        } else {
+            // 今日 → DiaryInputActivity
+            Intent(this, DiaryInputActivity::class.java)
+        }
+
         intent.putExtra("year", day.year)
         intent.putExtra("month", day.month)
         intent.putExtra("day", day.day)
         startActivity(intent)
     }
+
 
     private fun setupBottomNavigation() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
@@ -129,10 +163,9 @@ class CalendarActivity : AppCompatActivity() {
                 else -> false
             }
         }
-        // カレンダーを選択状態にする
+        // profileを選択状態にする
         bottomNav.selectedItemId = R.id.nav_calendar
     }
-}
 
 data class CalendarDay(
     val day: Int,
@@ -177,7 +210,8 @@ class CalendarAdapter(
         if (day.year == today.get(Calendar.YEAR) &&
             day.month == today.get(Calendar.MONTH) &&
             day.day == today.get(Calendar.DAY_OF_MONTH) &&
-            day.isCurrentMonth) {
+            day.isCurrentMonth
+        ) {
             holder.dayContainer.setBackgroundResource(R.drawable.circle_highlight)
         } else {
             holder.dayContainer.background = null
@@ -189,4 +223,5 @@ class CalendarAdapter(
     }
 
     override fun getItemCount() = days.size
+    }
 }
