@@ -2,7 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- アプリ全体の設定 -->
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -12,28 +11,42 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Selfcare_android">
-        <activity android:name=".SettingsDetailActivity"/>
-        <activity android:name=".AlbumActivity"/>
-        <activity android:name=".WeeklyLetterActivity"/>
-        <activity android:name=".SettingsActivity"/>
-        <activity android:name=".DiaryGenerateActivity"/>
-        <activity android:name=".DiaryDetailActivity"/>
-        <!--  アプリの起動時に最初に開かれる画-->
+
+        <!-- 各Activityに個別設定 -->
+        <activity
+            android:name=".SettingsDetailActivity"
+            android:windowSoftInputMode="adjustPan"/>
+        <activity
+            android:name=".AlbumActivity"
+            android:windowSoftInputMode="adjustPan"/>
+        <activity
+            android:name=".WeeklyLetterActivity"
+            android:windowSoftInputMode="adjustPan"/>
+        <activity
+            android:name=".SettingsActivity"
+            android:windowSoftInputMode="adjustPan"/>
+        <activity
+            android:name=".DiaryGenerateActivity"
+            android:windowSoftInputMode="adjustPan"/>
+        <activity
+            android:name=".DiaryDetailActivity"
+            android:windowSoftInputMode="adjustPan"/>
+
         <activity
             android:name=".CalendarActivity"
-            android:exported="true">
+            android:exported="true"
+            android:windowSoftInputMode="adjustPan">
             <intent-filter>
-                <!-- アプリのエントリーポイント（起動アクション） -->
                 <action android:name="android.intent.action.MAIN" />
-                <!-- ホーム画面のアイコンから起動可能にする -->
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!--「日記作成画面」アクティビティ -->
+
         <activity
             android:name=".DiaryInputActivity"
             android:exported="false"
-            android:label="日記入力" />
+            android:label="日記入力"
+            android:windowSoftInputMode="adjustPan" />
     </application>
 
 </manifest>
