@@ -97,8 +97,8 @@ class SettingsActivity : AppCompatActivity() {
 //        // }
 //    }
     private fun initViews() {
-        tvName = findViewById(R.id.tv_name) // 例: 名前のTextView
-        tvGender = findViewById(R.id.tv_gender) // 例: 性別のTextView
+        tvName = findViewById(R.id.nameText) // 例: 名前のTextView
+        tvGender = findViewById(R.id.spinnerGender) // 例: 性別のTextView
         tvBirthday = findViewById(R.id.tv_birthday) // 例: 誕生日のTextView
         tvHobby = findViewById(R.id.tv_hobby) // 例: 趣味のTextView
         tvFavorite = findViewById(R.id.tv_favorite) // 例: 好きなもののTextView

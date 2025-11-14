@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.view.View
 import android.widget.EditText
 import android.widget.ImageView
-import android.widget.LinearLayout // 誕生日Spinner用
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -22,9 +21,7 @@ class SettingsDetailActivity : AppCompatActivity() {
     // --- UI要素を定義 ---
     // (lateinit var を使うと findViewById が1回で済みます)
     private lateinit var detailType: String
-    private lateinit var editText: EditText
     private lateinit var spinnerGender: Spinner
-    private lateinit var layoutBirthdaySpinners: LinearLayout // 年月日Spinnerの親レイアウト
     private lateinit var spinnerYear: Spinner
     private lateinit var spinnerMonth: Spinner
     private lateinit var spinnerDay: Spinner
@@ -65,11 +62,7 @@ class SettingsDetailActivity : AppCompatActivity() {
      */
     private fun initViews() {
         // XMLのIDと一致させてください
-        editText = findViewById(R.id.edit_text)
         spinnerGender = findViewById(R.id.spinnerGender)
-
-        // ※誕生日のSpinner 3つを囲む親レイアウト（LinearLayoutなど）のID
-        layoutBirthdaySpinners = findViewById(R.id.layout_birthday_spinners)
 
         spinnerYear = findViewById(R.id.spinnerYear)
         spinnerMonth = findViewById(R.id.spinnerMonth)
@@ -103,9 +96,13 @@ class SettingsDetailActivity : AppCompatActivity() {
      */
     private fun loadUserData() {
         // 最初にすべての関連UIを非表示にする
-        editText.visibility = View.GONE
+        editEmail.visibility = View.GONE
+        editHobby.visibility = View.GONE
+        editFavorite.visibility = View.GONE
         spinnerGender.visibility = View.GONE
-        layoutBirthdaySpinners.visibility = View.GONE
+        spinnerYear.visibility = View.GONE
+        spinnerMonth.visibility = View.GONE
+        spinnerDay.visibility = View.GONE
 
         lifecycleScope.launch {
             // 1. DataRepositoryから設定をロード
@@ -113,9 +110,12 @@ class SettingsDetailActivity : AppCompatActivity() {
 
             // 2. detailTypeに応じてUIを表示し、データをセット
             when (detailType) {
+                // 【！】"NAME"用のEditTextがないため、仮でeditHobbyを使います
+                // XMLに "editName" などを追加するのがベストです。
                 "NAME" -> {
-                    editText.visibility = View.VISIBLE
-                    editText.setText(settings?.name ?: "")
+                    editHobby.visibility = View.VISIBLE
+                    editHobby.setText(settings?.name ?: "")
+                    editHobby.hint = "名前を入力" // ヒントを上書き
                 }
                 "GENDER" -> {
                     spinnerGender.visibility = View.VISIBLE
@@ -130,7 +130,9 @@ class SettingsDetailActivity : AppCompatActivity() {
                     spinnerGender.setSelection(genderPosition)
                 }
                 "BIRTHDAY" -> {
-                    layoutBirthdaySpinners.visibility = View.VISIBLE
+                    spinnerYear.visibility = View.VISIBLE
+                    spinnerMonth.visibility = View.VISIBLE
+                    spinnerDay.visibility = View.VISIBLE
                     val savedBirthday = settings?.birthday // 例: "2000/1/15"
 
                     if (!savedBirthday.isNullOrEmpty()) {
@@ -152,12 +154,12 @@ class SettingsDetailActivity : AppCompatActivity() {
                     }
                 }
                 "HOBBY" -> {
-                    editText.visibility = View.VISIBLE
-                    editText.setText(settings?.hobby ?: "")
+                    editHobby.visibility = View.VISIBLE
+                    editHobby.setText(settings?.hobby ?: "")
                 }
                 "FAVORITE" -> {
-                    editText.visibility = View.VISIBLE
-                    editText.setText(settings?.favorite ?: "")
+                    editFavorite.visibility = View.VISIBLE
+                    editFavorite.setText(settings?.favorite ?: "")
                 }
                 // "EMAIL" など、古いコードにあって今はない項目は無視
             }
@@ -176,12 +178,11 @@ class SettingsDetailActivity : AppCompatActivity() {
         // 3. detailTypeに応じて、"どのUIから"データを取得するか変える
         val newSettings = when (detailType) {
             "NAME" -> {
-                currentSettings.copy(name = editText.text.toString())
+                currentSettings.copy(name = editHobby.text.toString())
             }
             "GENDER" -> {
                 // "未選択" が選ばれていないかチェック（任意）
-                val selectedGender = spinnerGender.selectedItem.toString()
-                currentSettings.copy(gender = selectedGender)
+                currentSettings.copy(gender = spinnerGender.selectedItem.toString())
             }
             "BIRTHDAY" -> {
                 val year = spinnerYear.selectedItem.toString()
@@ -190,10 +191,10 @@ class SettingsDetailActivity : AppCompatActivity() {
                 currentSettings.copy(birthday = "$year/$month/$day")
             }
             "HOBBY" -> {
-                currentSettings.copy(hobby = editText.text.toString())
+                currentSettings.copy(hobby = editHobby.text.toString())
             }
             "FAVORITE" -> {
-                currentSettings.copy(favorite = editText.text.toString())
+                currentSettings.copy(favorite = editFavorite.text.toString())
             }
             else -> currentSettings // 不明な場合はそのまま
         }
