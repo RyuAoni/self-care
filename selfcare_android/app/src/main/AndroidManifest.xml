@@ -11,15 +11,42 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Selfcare_android">
+
+        <!-- 各Activityに個別設定 -->
         <activity
-            android:name=".EmotionAnalysisActivity"
-            android:exported="true">
+            android:name=".SettingsDetailActivity"
+            android:windowSoftInputMode="adjustPan"/>
+        <activity
+            android:name=".AlbumActivity"
+            android:windowSoftInputMode="adjustPan"/>
+        <activity
+            android:name=".WeeklyLetterActivity"
+            android:windowSoftInputMode="adjustPan"/>
+        <activity
+            android:name=".SettingsActivity"
+            android:windowSoftInputMode="adjustPan"/>
+        <activity
+            android:name=".DiaryGenerateActivity"
+            android:windowSoftInputMode="adjustPan"/>
+        <activity
+            android:name=".DiaryDetailActivity"
+            android:windowSoftInputMode="adjustPan"/>
+
+        <activity
+            android:name=".CalendarActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".DiaryInputActivity"
+            android:exported="false"
+            android:label="日記入力"
+            android:windowSoftInputMode="adjustPan" />
     </application>
 
 </manifest>
