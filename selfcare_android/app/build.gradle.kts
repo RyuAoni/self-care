@@ -8,8 +8,7 @@ android {
     compileSdk = 36
 
     buildFeatures {
-        viewBinding = true // Data Bindingではなく、View Bindingを使用する場合
-        // dataBinding = true // Data Bindingを使用する場合はこちら
+        viewBinding = true
     }
 
     defaultConfig {
@@ -31,18 +30,19 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
     }
 }
 
 dependencies {
-
-
+    implementation("com.github.PhilJay:MPAndroidChart:3.1.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
