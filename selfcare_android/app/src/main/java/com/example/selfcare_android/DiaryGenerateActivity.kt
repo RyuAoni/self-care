@@ -78,7 +78,8 @@ class DiaryGenerateActivity : AppCompatActivity() {
                 }
                 // 統計
                 R.id.nav_stats -> {
-                    Toast.makeText(this, "統計画面", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(this, EmotionAnalysisActivity::class.java)
+                    startActivity(intent)
                     true
                 }
                 // プロフィール

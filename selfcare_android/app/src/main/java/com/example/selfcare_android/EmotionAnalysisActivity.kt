@@ -2,6 +2,7 @@ package com.example.selfcare_android
 
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import android.app.DatePickerDialog
+import android.content.Intent
 import android.os.Bundle
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -10,6 +11,7 @@ import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.utils.ColorTemplate
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -36,11 +38,36 @@ class EmotionAnalysisActivity : AppCompatActivity() {
         updateDateRangeText()
         setupEmotionChart()
         setupStepChart()
+        setupBottomNavigation()
 
         // 日付範囲テキストをクリックで変更
         dateRangeTextView.setOnClickListener {
             showStartDatePicker()
         }
+    }
+
+    private fun setupBottomNavigation() {
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_stats -> {
+                    true
+                }
+                R.id.nav_calendar -> {
+                    val intent = Intent(this, CalendarActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                R.id.nav_profile -> {
+                    val intent = Intent(this, SettingsActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                else -> false
+            }
+        }
+        // statsを選択状態にする
+        bottomNav.selectedItemId = R.id.nav_stats
     }
 
     /** 開始日を選択 */

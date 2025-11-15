@@ -31,6 +31,9 @@
         <activity
             android:name=".DiaryDetailActivity"
             android:windowSoftInputMode="adjustPan"/>
+        <activity
+            android:name=".EmotionAnalysisActivity"
+            android:windowSoftInputMode="adjustPan"/>
 
         <activity
             android:name=".CalendarActivity"
