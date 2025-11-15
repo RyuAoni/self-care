@@ -1,10 +1,7 @@
 package com.example.selfcare_android
 
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
-import android.app.DatePickerDialog
-import android.content.Intent
 import android.os.Bundle
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.LineChart
@@ -12,6 +9,11 @@ import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.utils.ColorTemplate
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import android.content.Intent
+import android.widget.Spinner
+import android.widget.ArrayAdapter
+import android.widget.AdapterView
+import android.view.View
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -19,10 +21,12 @@ class EmotionAnalysisActivity : AppCompatActivity() {
 
     private lateinit var emotionChart: LineChart
     private lateinit var stepChart: BarChart
-    private lateinit var dateRangeTextView: TextView
+    private lateinit var weekSpinner: Spinner
 
     private var startDate: Calendar = Calendar.getInstance()
     private var endDate: Calendar = Calendar.getInstance()
+    private val weekRanges = mutableListOf<Pair<Calendar, Calendar>>()
+    private var currentWeekIndex = 0 // 現在選択されている週のインデックス
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,20 +34,14 @@ class EmotionAnalysisActivity : AppCompatActivity() {
 
         emotionChart = findViewById(R.id.emotionChart)
         stepChart = findViewById(R.id.stepChart)
-        dateRangeTextView = findViewById(R.id.dateRangeTextView)
+        weekSpinner = findViewById(R.id.weekSpinner)
 
-        // 初期表示
-        startDate.set(2025, Calendar.JANUARY, 5)
-        endDate.set(2025, Calendar.JANUARY, 11)
-        updateDateRangeText()
+        // 週の範囲を生成（過去8週間分）
+        generateWeekRanges()
+        setupWeekSpinner()
         setupEmotionChart()
         setupStepChart()
         setupBottomNavigation()
-
-        // 日付範囲テキストをクリックで変更
-        dateRangeTextView.setOnClickListener {
-            showStartDatePicker()
-        }
     }
 
     private fun setupBottomNavigation() {
@@ -70,30 +68,62 @@ class EmotionAnalysisActivity : AppCompatActivity() {
         bottomNav.selectedItemId = R.id.nav_stats
     }
 
-    /** 開始日を選択 */
-    private fun showStartDatePicker() {
-        val c = Calendar.getInstance()
-        DatePickerDialog(this, { _, year, month, day ->
-            startDate.set(year, month, day)
-            showEndDatePicker()
-        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
+    /** 週の範囲を生成 */
+    private fun generateWeekRanges() {
+        val today = Calendar.getInstance()
+
+        // 今日を含む週の日曜日を計算
+        val currentWeekStart = Calendar.getInstance().apply {
+            time = today.time
+            set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
+        }
+
+        // 過去8週間分の範囲を生成
+        for (i in 0..7) {
+            val weekStart = Calendar.getInstance().apply {
+                time = currentWeekStart.time
+                add(Calendar.WEEK_OF_YEAR, -i)
+            }
+            val weekEnd = Calendar.getInstance().apply {
+                time = weekStart.time
+                add(Calendar.DAY_OF_YEAR, 6)
+            }
+            weekRanges.add(Pair(weekStart, weekEnd))
+        }
+
+        // 最初の週（今週）を初期値に設定
+        currentWeekIndex = 0
+        startDate.time = weekRanges[currentWeekIndex].first.time
+        endDate.time = weekRanges[currentWeekIndex].second.time
     }
 
-    /** 終了日を選択 */
-    private fun showEndDatePicker() {
-        val c = Calendar.getInstance()
-        DatePickerDialog(this, { _, year, month, day ->
-            endDate.set(year, month, day)
-            updateDateRangeText()
-            updateCharts()
-        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
-    }
-
-    /** 日付範囲表示を更新 */
-    private fun updateDateRangeText() {
+    /** 週選択スピナーの設定 */
+    private fun setupWeekSpinner() {
         val format = SimpleDateFormat("M月d日", Locale.JAPAN)
-        dateRangeTextView.text =
-            "${format.format(startDate.time)}〜${format.format(endDate.time)}"
+        val weekLabels = weekRanges.map { (start, end) ->
+            "${format.format(start.time)}〜${format.format(end.time)}"
+        }
+
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            weekLabels
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+
+        weekSpinner.adapter = adapter
+        weekSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                currentWeekIndex = position
+                val selectedWeek = weekRanges[position]
+                startDate.time = selectedWeek.first.time
+                endDate.time = selectedWeek.second.time
+                updateCharts()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
     }
 
     /** グラフ更新 */
@@ -104,6 +134,7 @@ class EmotionAnalysisActivity : AppCompatActivity() {
 
     /** 感情スコアグラフ */
     private fun setupEmotionChart() {
+        // TODO: 実際のデータベースからデータを取得
         val entries = listOf(
             Entry(0f, 3f),
             Entry(1f, 1f),
@@ -132,12 +163,17 @@ class EmotionAnalysisActivity : AppCompatActivity() {
             valueFormatter = IndexAxisValueFormatter(listOf("日", "月", "火", "水", "木", "金", "土"))
         }
         emotionChart.axisRight.isEnabled = false
-        emotionChart.axisLeft.setDrawGridLines(true)
+        emotionChart.axisLeft.apply {
+            setDrawGridLines(true)
+            axisMinimum = 0f
+            axisMaximum = 5f
+        }
         emotionChart.invalidate()
     }
 
     /** 歩数グラフ */
     private fun setupStepChart() {
+        // TODO: 実際のデータベースからデータを取得
         val entries = listOf(
             BarEntry(0f, 1600f),
             BarEntry(1f, 4500f),

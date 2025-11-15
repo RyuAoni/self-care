@@ -1,17 +1,22 @@
 package com.example.selfcare_android
 
+import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
+import android.view.GestureDetector
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GestureDetectorCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import java.util.*
+import kotlin.math.abs
 
 class CalendarActivity : AppCompatActivity() {
 
@@ -20,6 +25,7 @@ class CalendarActivity : AppCompatActivity() {
     private lateinit var calendarAdapter: CalendarAdapter
     private val calendar = Calendar.getInstance()
     private val days = mutableListOf<CalendarDay>()
+    private lateinit var gestureDetector: GestureDetectorCompat
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,12 +34,18 @@ class CalendarActivity : AppCompatActivity() {
         setupViews()
         setupCalendar()
         setupBottomNavigation()
+        setupGestureDetector()
         updateCalendar()
     }
 
     private fun setupViews() {
         monthYearText = findViewById(R.id.monthYearText)
         calendarRecyclerView = findViewById(R.id.calendarRecyclerView)
+
+        // 年月テキストをクリックで月選択ダイアログを表示
+        monthYearText.setOnClickListener {
+            showMonthYearPicker()
+        }
 
         findViewById<ImageView>(R.id.prevMonthButton).setOnClickListener {
             calendar.add(Calendar.MONTH, -1)
@@ -44,6 +56,76 @@ class CalendarActivity : AppCompatActivity() {
             calendar.add(Calendar.MONTH, 1)
             updateCalendar()
         }
+    }
+
+    private fun setupGestureDetector() {
+        gestureDetector = GestureDetectorCompat(this, object : GestureDetector.SimpleOnGestureListener() {
+            private val SWIPE_THRESHOLD = 100
+            private val SWIPE_VELOCITY_THRESHOLD = 100
+
+            override fun onFling(
+                e1: MotionEvent?,
+                e2: MotionEvent,
+                velocityX: Float,
+                velocityY: Float
+            ): Boolean {
+                if (e1 == null) return false
+
+                val diffX = e2.x - e1.x
+                val diffY = e2.y - e1.y
+
+                if (abs(diffX) > abs(diffY)) {
+                    if (abs(diffX) > SWIPE_THRESHOLD && abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                        if (diffX > 0) {
+                            // 右スワイプ → 前月
+                            calendar.add(Calendar.MONTH, -1)
+                            updateCalendar()
+                        } else {
+                            // 左スワイプ → 次月
+                            calendar.add(Calendar.MONTH, 1)
+                            updateCalendar()
+                        }
+                        return true
+                    }
+                }
+                return false
+            }
+        })
+
+        calendarRecyclerView.setOnTouchListener { _, event ->
+            gestureDetector.onTouchEvent(event)
+            false
+        }
+    }
+
+    private fun showMonthYearPicker() {
+        val currentYear = calendar.get(Calendar.YEAR)
+        val currentMonth = calendar.get(Calendar.MONTH)
+
+        // DatePickerDialogを使用して年月を選択
+        val datePickerDialog = DatePickerDialog(
+            this,
+            { _, year, month, _ ->
+                calendar.set(Calendar.YEAR, year)
+                calendar.set(Calendar.MONTH, month)
+                updateCalendar()
+            },
+            currentYear,
+            currentMonth,
+            1
+        )
+
+        // 日付選択を非表示にして月と年のみ選択可能に
+        try {
+            val dayPicker = datePickerDialog.datePicker
+            dayPicker.findViewById<View>(
+                resources.getIdentifier("day", "id", "android")
+            )?.visibility = View.GONE
+        } catch (e: Exception) {
+            // フォールバック: 日付ピッカーの非表示に失敗した場合
+        }
+
+        datePickerDialog.show()
     }
 
     private fun setupCalendar() {
@@ -142,7 +224,6 @@ class CalendarActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-
     private fun setupBottomNavigation() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
         bottomNav.setOnItemSelectedListener { item ->
@@ -163,9 +244,10 @@ class CalendarActivity : AppCompatActivity() {
                 else -> false
             }
         }
-        // profileを選択状態にする
+        // calendarを選択状態にする
         bottomNav.selectedItemId = R.id.nav_calendar
     }
+}
 
 data class CalendarDay(
     val day: Int,
@@ -223,5 +305,4 @@ class CalendarAdapter(
     }
 
     override fun getItemCount() = days.size
-    }
 }

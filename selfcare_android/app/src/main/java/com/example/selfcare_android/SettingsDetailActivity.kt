@@ -21,7 +21,7 @@ class SettingsDetailActivity : AppCompatActivity() {
     private lateinit var spinnerYear: Spinner
     private lateinit var spinnerMonth: Spinner
     private lateinit var spinnerDay: Spinner
-    private lateinit var editEmail: EditText
+    private lateinit var editOccupation: EditText
     private lateinit var editHobby: EditText
     private lateinit var editFavorite: EditText
 
@@ -50,7 +50,7 @@ class SettingsDetailActivity : AppCompatActivity() {
         spinnerYear = findViewById(R.id.spinnerYear)
         spinnerMonth = findViewById(R.id.spinnerMonth)
         spinnerDay = findViewById(R.id.spinnerDay)
-        editEmail = findViewById(R.id.editEmail)
+        editOccupation = findViewById(R.id.editOccupation)
         editHobby = findViewById(R.id.editHobby)
         editFavorite = findViewById(R.id.editFavorite)
     }
@@ -74,7 +74,7 @@ class SettingsDetailActivity : AppCompatActivity() {
         genderAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerGender.adapter = genderAdapter
 
-        // 年Spinner（1900年〜現在年）
+        // 年Spinner(1900年〜現在年)
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
         val years = mutableListOf("—")
         for (year in currentYear downTo 1900) {
@@ -84,7 +84,7 @@ class SettingsDetailActivity : AppCompatActivity() {
         yearAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerYear.adapter = yearAdapter
 
-        // 月Spinner（1〜12月）
+        // 月Spinner(1〜12月)
         val months = mutableListOf("—")
         for (month in 1..12) {
             months.add(month.toString())
@@ -93,7 +93,7 @@ class SettingsDetailActivity : AppCompatActivity() {
         monthAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerMonth.adapter = monthAdapter
 
-        // 日Spinner（1〜31日）
+        // 日Spinner(1〜31日)
         val days = mutableListOf("—")
         for (day in 1..31) {
             days.add(day.toString())
@@ -144,7 +144,7 @@ class SettingsDetailActivity : AppCompatActivity() {
         dayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerDay.adapter = dayAdapter
 
-        // 以前の選択を維持（範囲内であれば）
+        // 以前の選択を維持(範囲内であれば)
         if (currentSelection < days.size) {
             spinnerDay.setSelection(currentSelection)
         }
@@ -237,7 +237,7 @@ class SettingsDetailActivity : AppCompatActivity() {
         }
 
         // その他の項目
-        editEmail.setText(prefs.getString("email", ""))
+        editOccupation.setText(prefs.getString("occupation", ""))
         editHobby.setText(prefs.getString("hobby", ""))
         editFavorite.setText(prefs.getString("favorite", ""))
     }
@@ -255,7 +255,7 @@ class SettingsDetailActivity : AppCompatActivity() {
             ""
         }
 
-        val email = editEmail.text.toString().trim()
+        val occupation = editOccupation.text.toString().trim()
         val hobby = editHobby.text.toString().trim()
         val favorite = editFavorite.text.toString().trim()
 
@@ -264,7 +264,7 @@ class SettingsDetailActivity : AppCompatActivity() {
         prefs.edit().apply {
             putString("gender", if (gender == "選択してください") "" else gender)
             putString("birthday", birthday)
-            putString("email", email)
+            putString("occupation", occupation)
             putString("hobby", hobby)
             putString("favorite", favorite)
             apply()
