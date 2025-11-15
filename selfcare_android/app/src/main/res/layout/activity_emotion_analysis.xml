@@ -1,38 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="#F9F7E8"
     tools:context=".EmotionAnalysisActivity">
 
+    <!-- 週選択ヘッダー（カレンダーと同じデザイン） -->
+    <LinearLayout
+        android:id="@+id/weekHeader"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurface"
+        android:elevation="2dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- 週選択スピナー（中央寄せ） -->
+        <Spinner
+            android:id="@+id/weekSpinner"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center"
+            android:minHeight="40dp"
+            android:padding="8dp"
+            android:textStyle="bold"
+            android:spinnerMode="dropdown" />
+    </LinearLayout>
+
     <!-- スクロール可能なメインコンテンツ -->
     <ScrollView
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        app:layout_constraintTop_toBottomOf="@id/weekHeader"
+        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
-
-            <!-- 日付範囲 -->
-            <TextView
-                android:id="@+id/dateRangeTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="1月5日〜1月11日"
-                android:textSize="20sp"
-                android:textColor="#000000"
-                android:textStyle="bold"
-                android:padding="8dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:background="?android:attr/selectableItemBackground" />
 
             <!-- 感情スコアグラフ -->
             <LinearLayout
@@ -41,7 +59,6 @@
                 android:orientation="vertical"
                 android:background="#E6E3C8"
                 android:padding="12dp"
-                android:layout_marginTop="16dp"
                 android:layout_marginBottom="8dp"
                 android:clipToOutline="true"
                 android:elevation="2dp">
@@ -87,14 +104,17 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- 常に下に固定されるボトムナビ -->
+    <!-- ボトムナビゲーション -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="#C5C8A4"
         app:itemIconTint="@android:color/black"
         app:itemTextColor="@android:color/black"
-        app:menu="@menu/bottom_nav_menu" />
+        app:menu="@menu/bottom_nav_menu"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

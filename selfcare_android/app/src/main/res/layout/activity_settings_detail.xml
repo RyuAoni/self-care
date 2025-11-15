@@ -171,7 +171,7 @@
                 android:layout_height="1dp"
                 android:background="#E0E0E0"/>
 
-            <!-- メールアドレス - EditText -->
+            <!-- 職業 - EditText -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -182,13 +182,12 @@
                 <TextView
                     android:layout_width="120dp"
                     android:layout_height="wrap_content"
-                    android:text="メールアドレス"
+                    android:text="職業"
                     android:textSize="16sp"
-                    android:textColor="#000000"
-                    android:lineSpacingExtra="4dp"/>
+                    android:textColor="#000000"/>
 
                 <EditText
-                    android:id="@+id/editEmail"
+                    android:id="@+id/editOccupation"
                     android:layout_width="0dp"
                     android:layout_height="48dp"
                     android:layout_weight="1"
@@ -197,7 +196,7 @@
                     android:textColor="#000000"
                     android:textColorHint="#999999"
                     android:background="@drawable/edit_text_border"
-                    android:inputType="textEmailAddress"
+                    android:inputType="text"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"/>
 

@@ -2,7 +2,9 @@ package com.example.selfcare_android
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.EditText
 import android.widget.ImageView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -18,24 +20,31 @@ class SettingsActivity : AppCompatActivity() {
 
         // ボトムナビゲーションの設定
         setupBottomNavigation()
+
+        // 名前をタップして編集できるように設定
+        findViewById<android.widget.TextView>(R.id.nameText).setOnClickListener {
+            showEditNameDialog()
+        }
+
+        // プロフィール画像をタップして編集できるように設定
+        findViewById<ImageView>(R.id.profileImage).setOnClickListener {
+            showEditProfileImageDialog()
+        }
     }
 
     private fun setupMenuButtons() {
         // 週次お手紙ボタン
         findViewById<CardView>(R.id.weeklyLetterButton).setOnClickListener {
-            // TODO: 週次お手紙画面へ遷移
             startActivity(Intent(this, WeeklyLetterActivity::class.java))
         }
 
         // アルバムボタン
         findViewById<CardView>(R.id.albumButton).setOnClickListener {
-            // TODO: アルバム画面へ遷移
             startActivity(Intent(this, AlbumActivity::class.java))
         }
 
         // 設定ボタン（現在の画面なので何もしない or 設定詳細へ）
         findViewById<CardView>(R.id.settingsButton).setOnClickListener {
-            // TODO: 設定詳細画面へ遷移
             startActivity(Intent(this, SettingsDetailActivity::class.java))
         }
     }
@@ -83,5 +92,43 @@ class SettingsActivity : AppCompatActivity() {
         // profileImageUri?.let {
         //     findViewById<ImageView>(R.id.profileImage).setImageURI(Uri.parse(it))
         // }
+    }
+
+    private fun showEditNameDialog() {
+        val sharedPreferences = getSharedPreferences("UserProfile", MODE_PRIVATE)
+        val currentName = sharedPreferences.getString("user_name", "はるさめべーこん")
+
+        // EditTextを作成
+        val editText = EditText(this)
+        editText.setText(currentName)
+        editText.setPadding(50, 40, 50, 40)
+
+        // ダイアログを作成
+        AlertDialog.Builder(this)
+            .setTitle("名前を編集")
+            .setView(editText)
+            .setPositiveButton("保存") { _, _ ->
+                val newName = editText.text.toString().trim()
+                if (newName.isNotEmpty()) {
+                    // SharedPreferencesに保存
+                    sharedPreferences.edit().apply {
+                        putString("user_name", newName)
+                        apply()
+                    }
+                    // 表示を更新
+                    loadProfileData()
+                }
+            }
+            .setNegativeButton("キャンセル", null)
+            .show()
+    }
+
+    private fun showEditProfileImageDialog() {
+        // TODO: プロフィール画像の編集機能を実装
+        AlertDialog.Builder(this)
+            .setTitle("プロフィール画像")
+            .setMessage("プロフィール画像の変更機能は今後実装予定です")
+            .setPositiveButton("OK", null)
+            .show()
     }
 }
