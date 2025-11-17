@@ -9,8 +9,8 @@
     <!-- トップバー -->
     <LinearLayout
         android:id="@+id/topBar"
-        android:layout_width="0dp"
-        android:layout_height="56dp"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:background="#FFFFFF"
@@ -23,8 +23,8 @@
         <!-- 閉じるボタン -->
         <ImageView
             android:id="@+id/buttonClose"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:scaleType="centerInside"
             android:background="?attr/selectableItemBackgroundBorderless" />
