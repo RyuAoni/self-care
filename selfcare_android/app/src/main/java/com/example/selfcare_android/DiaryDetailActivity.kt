@@ -2,6 +2,7 @@ package com.example.selfcare_android
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -27,7 +28,8 @@ class DiaryDetailActivity : AppCompatActivity() {
     }
 
     private fun setupTopBar(year: Int, month: Int, day: Int) {
-        findViewById<ImageView>(R.id.backButton).setOnClickListener {
+        val backButton: ImageButton = findViewById(R.id.backButton)
+        backButton.setOnClickListener {
             finish()
         }
 
