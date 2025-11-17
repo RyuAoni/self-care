@@ -9,8 +9,8 @@
     <!-- 月表示エリア -->
     <LinearLayout
         android:id="@+id/monthHeader"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingHorizontal="16dp"
