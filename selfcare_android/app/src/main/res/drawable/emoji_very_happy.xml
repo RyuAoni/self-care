@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 背景の円 -->
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#FF9800" />
+            <size android:width="80dp" android:height="80dp" />
+        </shape>
+    </item>
+
+    <!-- 目（左）＜ -->
+    <item
+        android:width="14dp"
+        android:height="3dp"
+        android:left="20dp"
+        android:top="22dp">
+        <rotate
+            android:fromDegrees="25"
+            android:pivotX="0%"
+            android:pivotY="50%">
+            <shape android:shape="rectangle">
+                <solid android:color="#000000" />
+            </shape>
+        </rotate>
+    </item>
+
+    <item
+        android:width="14dp"
+        android:height="3dp"
+        android:left="20dp"
+        android:top="33dp">
+        <rotate
+            android:fromDegrees="-25"
+            android:pivotX="0%"
+            android:pivotY="50%">
+            <shape android:shape="rectangle">
+                <solid android:color="#000000" />
+            </shape>
+        </rotate>
+    </item>
+
+    <!-- 目（右）＞ -->
+    <item
+        android:width="14dp"
+        android:height="3dp"
+        android:left="46dp"
+        android:top="22dp">
+        <rotate
+            android:fromDegrees="-25"
+            android:pivotX="100%"
+            android:pivotY="50%">
+            <shape android:shape="rectangle">
+                <solid android:color="#000000" />
+            </shape>
+        </rotate>
+    </item>
+
+    <item
+        android:width="14dp"
+        android:height="3dp"
+        android:left="46dp"
+        android:top="33dp">
+        <rotate
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fromDegrees="25"
+            android:pivotX="100%"
+            android:pivotY="50%">
+            <shape android:shape="rectangle">
+                <solid android:color="#000000" />
+            </shape>
+        </rotate>
+    </item>
+
+    <!-- 笑顔 -->
+    <item
+        android:width="30dp"
+        android:height="15dp"
+        android:left="25dp"
+        android:top="45dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#000000" />
+            <corners
+                android:bottomLeftRadius="15dp"
+                android:bottomRightRadius="15dp" />
+        </shape>
+    </item>
+</layer-list>
