@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <TextView android:text="開始日を選択" android:textStyle="bold" android:layout_marginBottom="8dp"/>
+    <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
+        <Spinner android:id="@+id/spinnerStartMonth" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+        <Spinner android:id="@+id/spinnerStartDay" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+    </LinearLayout>
+
+    <TextView android:text="終了日を選択" android:textStyle="bold" android:layout_marginTop="16dp" android:layout_marginBottom="8dp"/>
+    <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
+        <Spinner android:id="@+id/spinnerEndMonth" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+        <Spinner android:id="@+id/spinnerEndDay" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+    </LinearLayout>
+</LinearLayout>

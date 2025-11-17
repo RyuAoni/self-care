@@ -9,7 +9,7 @@
     <!-- トップバー -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="?attr/actionBarSize"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:background="#FFFFFF"
@@ -19,8 +19,8 @@
         <!-- 閉じるボタン -->
         <ImageView
             android:id="@+id/buttonClose"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:scaleType="centerInside"
             android:background="?attr/selectableItemBackgroundBorderless"/>
@@ -83,7 +83,8 @@
                     android:layout_height="48dp"
                     android:layout_weight="1"
                     android:background="@android:drawable/btn_dropdown"
-                    android:spinnerMode="dropdown"/>
+                    android:spinnerMode="dropdown"
+                    android:paddingEnd="32dp"/>
 
             </LinearLayout>
 
@@ -97,59 +98,70 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
+                android:orientation="vertical"
                 android:paddingVertical="16dp">
 
                 <TextView
-                    android:layout_width="120dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="生年月日"
                     android:textSize="16sp"
-                    android:textColor="#000000"/>
-
-                <!-- 年 -->
-                <Spinner
-                    android:id="@+id/spinnerYear"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:background="@android:drawable/btn_dropdown"
-                    android:spinnerMode="dropdown"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="/"
-                    android:textSize="16sp"
                     android:textColor="#000000"
-                    android:paddingHorizontal="4dp"/>
+                    android:layout_marginBottom="8dp"/>
 
-                <!-- 月 -->
-                <Spinner
-                    android:id="@+id/spinnerMonth"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:background="@android:drawable/btn_dropdown"
-                    android:spinnerMode="dropdown"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="/"
-                    android:textSize="16sp"
-                    android:textColor="#000000"
-                    android:paddingHorizontal="4dp"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-                <!-- 日 -->
-                <Spinner
-                    android:id="@+id/spinnerDay"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:background="@android:drawable/btn_dropdown"
-                    android:spinnerMode="dropdown"/>
+                    <!-- 年 -->
+                    <Spinner
+                        android:id="@+id/spinnerYear"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="2"
+                        android:background="@android:drawable/btn_dropdown"
+                        android:spinnerMode="dropdown"
+                        android:paddingEnd="32dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="/"
+                        android:textSize="16sp"
+                        android:textColor="#000000"
+                        android:paddingHorizontal="8dp"/>
+
+                    <!-- 月 -->
+                    <Spinner
+                        android:id="@+id/spinnerMonth"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1.5"
+                        android:background="@android:drawable/btn_dropdown"
+                        android:spinnerMode="dropdown"
+                        android:paddingEnd="32dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="/"
+                        android:textSize="16sp"
+                        android:textColor="#000000"
+                        android:paddingHorizontal="8dp"/>
+
+                    <!-- 日 -->
+                    <Spinner
+                        android:id="@+id/spinnerDay"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1.5"
+                        android:background="@android:drawable/btn_dropdown"
+                        android:spinnerMode="dropdown"
+                        android:paddingEnd="32dp"/>
+
+                </LinearLayout>
 
             </LinearLayout>
 
@@ -159,7 +171,7 @@
                 android:layout_height="1dp"
                 android:background="#E0E0E0"/>
 
-            <!-- メールアドレス - EditText -->
+            <!-- 職業 - EditText -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -170,13 +182,12 @@
                 <TextView
                     android:layout_width="120dp"
                     android:layout_height="wrap_content"
-                    android:text="メール\nアドレス"
+                    android:text="職業"
                     android:textSize="16sp"
-                    android:textColor="#000000"
-                    android:lineSpacingExtra="4dp"/>
+                    android:textColor="#000000"/>
 
                 <EditText
-                    android:id="@+id/editEmail"
+                    android:id="@+id/editOccupation"
                     android:layout_width="0dp"
                     android:layout_height="48dp"
                     android:layout_weight="1"
@@ -184,8 +195,8 @@
                     android:textSize="16sp"
                     android:textColor="#000000"
                     android:textColorHint="#999999"
-                    android:background="@android:color/transparent"
-                    android:inputType="textEmailAddress"
+                    android:background="@drawable/edit_text_border"
+                    android:inputType="text"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"/>
 
@@ -221,7 +232,7 @@
                     android:textSize="16sp"
                     android:textColor="#000000"
                     android:textColorHint="#999999"
-                    android:background="@android:color/transparent"
+                    android:background="@drawable/edit_text_border"
                     android:inputType="text"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"/>
@@ -258,7 +269,7 @@
                     android:textSize="16sp"
                     android:textColor="#000000"
                     android:textColorHint="#999999"
-                    android:background="@android:color/transparent"
+                    android:background="@drawable/edit_text_border"
                     android:inputType="text"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"/>
@@ -276,44 +287,13 @@
     </ScrollView>
 
     <!-- ボトムナビゲーション -->
-    <LinearLayout
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation"
         android:layout_width="match_parent"
-        android:layout_height="72dp"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:background="#C5D6A8"
-        android:elevation="8dp">
-
-        <ImageView
-            android:id="@+id/navStats"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:src="@android:drawable/ic_menu_report_image"
-            android:scaleType="centerInside"
-            android:padding="16dp"
-            app:tint="#5D4E37" />
-
-        <ImageView
-            android:id="@+id/navCalendar"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:src="@android:drawable/ic_menu_today"
-            android:scaleType="centerInside"
-            android:padding="16dp"
-            app:tint="#5D4E37"/>
-
-        <ImageView
-            android:id="@+id/navProfile"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:src="@android:drawable/ic_menu_myplaces"
-            android:scaleType="centerInside"
-            android:padding="16dp"
-            app:tint="#5D4E37"/>
-
-    </LinearLayout>
+        android:layout_height="wrap_content"
+        android:background="#C5C8A4"
+        app:itemIconTint="@android:color/black"
+        app:itemTextColor="@android:color/black"
+        app:menu="@menu/bottom_nav_menu" />
 
 </LinearLayout>

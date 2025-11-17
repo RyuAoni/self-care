@@ -1,17 +1,27 @@
 package com.example.selfcare_android
 
+import android.app.DatePickerDialog
 import android.content.Intent
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Rect
 import android.os.Bundle
+import android.view.GestureDetector
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GestureDetectorCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import java.util.*
+import kotlin.math.abs
 
 class CalendarActivity : AppCompatActivity() {
 
@@ -20,6 +30,7 @@ class CalendarActivity : AppCompatActivity() {
     private lateinit var calendarAdapter: CalendarAdapter
     private val calendar = Calendar.getInstance()
     private val days = mutableListOf<CalendarDay>()
+    private lateinit var gestureDetector: GestureDetectorCompat
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,12 +39,18 @@ class CalendarActivity : AppCompatActivity() {
         setupViews()
         setupCalendar()
         setupBottomNavigation()
+        setupGestureDetector()
         updateCalendar()
     }
 
     private fun setupViews() {
         monthYearText = findViewById(R.id.monthYearText)
         calendarRecyclerView = findViewById(R.id.calendarRecyclerView)
+
+        // 年月テキストをクリックで月選択ダイアログを表示
+        monthYearText.setOnClickListener {
+            showMonthYearPicker()
+        }
 
         findViewById<ImageView>(R.id.prevMonthButton).setOnClickListener {
             calendar.add(Calendar.MONTH, -1)
@@ -46,30 +63,119 @@ class CalendarActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupGestureDetector() {
+        gestureDetector = GestureDetectorCompat(this, object : GestureDetector.SimpleOnGestureListener() {
+            private val SWIPE_THRESHOLD = 100
+            private val SWIPE_VELOCITY_THRESHOLD = 100
+
+            override fun onFling(
+                e1: MotionEvent?,
+                e2: MotionEvent,
+                velocityX: Float,
+                velocityY: Float
+            ): Boolean {
+                if (e1 == null) return false
+
+                val diffX = e2.x - e1.x
+                val diffY = e2.y - e1.y
+
+                if (abs(diffX) > abs(diffY)) {
+                    if (abs(diffX) > SWIPE_THRESHOLD && abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                        if (diffX > 0) {
+                            // 右スワイプ → 前月
+                            calendar.add(Calendar.MONTH, -1)
+                            updateCalendar()
+                        } else {
+                            // 左スワイプ → 次月
+                            calendar.add(Calendar.MONTH, 1)
+                            updateCalendar()
+                        }
+                        return true
+                    }
+                }
+                return false
+            }
+        })
+
+        calendarRecyclerView.setOnTouchListener { _, event ->
+            gestureDetector.onTouchEvent(event)
+            false
+        }
+    }
+
+    private fun showMonthYearPicker() {
+        val currentYear = calendar.get(Calendar.YEAR)
+        val currentMonth = calendar.get(Calendar.MONTH)
+
+        // DatePickerDialogを使用して年月を選択
+        val datePickerDialog = DatePickerDialog(
+            this,
+            { _, year, month, _ ->
+                calendar.set(Calendar.YEAR, year)
+                calendar.set(Calendar.MONTH, month)
+                updateCalendar()
+            },
+            currentYear,
+            currentMonth,
+            1
+        )
+
+        // 日付選択を非表示にして月と年のみ選択可能に
+        try {
+            val dayPicker = datePickerDialog.datePicker
+            dayPicker.findViewById<View>(
+                resources.getIdentifier("day", "id", "android")
+            )?.visibility = View.GONE
+        } catch (e: Exception) {
+            // フォールバック: 日付ピッカーの非表示に失敗した場合
+        }
+
+        datePickerDialog.show()
+    }
+
     private fun setupCalendar() {
         calendarRecyclerView.layoutManager = GridLayoutManager(this, 7)
         calendarAdapter = CalendarAdapter(days) { day ->
-            if (day.isCurrentMonth) {
+            // 当月かつ今日以前の日付のみクリック可能
+            if (day.isCurrentMonth && !isFutureDate(day)) {
                 openDayDetail(day)
             }
         }
         calendarRecyclerView.adapter = calendarAdapter
+
+        // 横線の罫線を追加
+        calendarRecyclerView.addItemDecoration(CalendarItemDecoration())
+    }
+
+    private fun isFutureDate(day: CalendarDay): Boolean {
+        val today = Calendar.getInstance()
+        val targetDate = Calendar.getInstance()
+        targetDate.set(day.year, day.month, day.day, 0, 0, 0)
+        targetDate.set(Calendar.MILLISECOND, 0)
+
+        today.set(Calendar.HOUR_OF_DAY, 0)
+        today.set(Calendar.MINUTE, 0)
+        today.set(Calendar.SECOND, 0)
+        today.set(Calendar.MILLISECOND, 0)
+
+        return targetDate.after(today)
     }
 
     private fun updateCalendar() {
-        // 月と年を表示
-        val monthName = "${calendar.get(Calendar.MONTH) + 1}月"
-        monthYearText.text = monthName
+        // 月と年を表示（例: 2025年 1月）
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH) + 1
+        monthYearText.text = "${year}年 ${month}月"
 
         // カレンダーのデータを生成
         days.clear()
 
-        val year = calendar.get(Calendar.YEAR)
-        val month = calendar.get(Calendar.MONTH)
+        val currentYear = calendar.get(Calendar.YEAR)
+        val currentMonth = calendar.get(Calendar.MONTH)
 
         // 月の最初の日
         val firstDayOfMonth = Calendar.getInstance()
-        firstDayOfMonth.set(year, month, 1)
+        firstDayOfMonth.set(currentYear, currentMonth, 1)
         val firstDayOfWeek = firstDayOfMonth.get(Calendar.DAY_OF_WEEK) - 1 // 日曜日=0
 
         // 月の日数
@@ -77,31 +183,49 @@ class CalendarActivity : AppCompatActivity() {
 
         // 前月の日付を追加（グレーアウト）
         val prevMonth = Calendar.getInstance()
-        prevMonth.set(year, month, 1)
+        prevMonth.set(currentYear, currentMonth, 1)
         prevMonth.add(Calendar.MONTH, -1)
         val maxDayInPrevMonth = prevMonth.getActualMaximum(Calendar.DAY_OF_MONTH)
 
         for (i in 0 until firstDayOfWeek) {
             val day = maxDayInPrevMonth - firstDayOfWeek + i + 1
-            days.add(CalendarDay(day, false, year, month - 1))
+            days.add(CalendarDay(day, false, currentYear, currentMonth - 1))
         }
 
         // 当月の日付を追加
         for (day in 1..maxDayInMonth) {
-            days.add(CalendarDay(day, true, year, month))
+            days.add(CalendarDay(day, true, currentYear, currentMonth))
         }
 
         // 次月の日付を追加（6週分になるように）
         val remainingDays = 42 - days.size // 6週 × 7日 = 42
         for (day in 1..remainingDays) {
-            days.add(CalendarDay(day, false, year, month + 1))
+            days.add(CalendarDay(day, false, currentYear, currentMonth + 1))
         }
 
         calendarAdapter.notifyDataSetChanged()
     }
 
     private fun openDayDetail(day: CalendarDay) {
-        val intent = Intent(this, DiaryInputActivity::class.java)
+        val today = Calendar.getInstance()
+        val target = Calendar.getInstance().apply {
+            set(day.year, day.month, day.day, 0, 0, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        today.set(Calendar.HOUR_OF_DAY, 0)
+        today.set(Calendar.MINUTE, 0)
+        today.set(Calendar.SECOND, 0)
+        today.set(Calendar.MILLISECOND, 0)
+
+        val intent = if (target.before(today)) {
+            // 昨日以前 → DiaryDetailActivity
+            Intent(this, DiaryDetailActivity::class.java)
+        } else {
+            // 今日 → DiaryInputActivity
+            Intent(this, DiaryInputActivity::class.java)
+        }
+
         intent.putExtra("year", day.year)
         intent.putExtra("month", day.month)
         intent.putExtra("day", day.day)
@@ -109,17 +233,27 @@ class CalendarActivity : AppCompatActivity() {
     }
 
     private fun setupBottomNavigation() {
-        findViewById<ImageView>(R.id.navStats).setOnClickListener {
-            Toast.makeText(this, "統計", Toast.LENGTH_SHORT).show()
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_stats -> {
+                    val intent = Intent(this, EmotionAnalysisActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                R.id.nav_calendar -> {
+                    true
+                }
+                R.id.nav_profile -> {
+                    val intent = Intent(this, SettingsActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                else -> false
+            }
         }
-
-        findViewById<ImageView>(R.id.navCalendar).setOnClickListener {
-            // 現在の画面なので何もしない
-        }
-
-        findViewById<ImageView>(R.id.navProfile).setOnClickListener {
-            finish()
-        }
+        // calendarを選択状態にする
+        bottomNav.selectedItemId = R.id.nav_calendar
     }
 }
 
@@ -138,6 +272,7 @@ class CalendarAdapter(
     class DayViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val dayText: TextView = view.findViewById(R.id.dayText)
         val dayContainer: View = view.findViewById(R.id.dayContainer)
+        val emotionIcon: ImageView = view.findViewById(R.id.emotionIcon)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DayViewHolder {
@@ -162,20 +297,94 @@ class CalendarAdapter(
         }
 
         // 今日の日付をハイライト
+        val dayHighlight = holder.itemView.findViewById<FrameLayout>(R.id.dayHighlight)
         val today = Calendar.getInstance()
-        if (day.year == today.get(Calendar.YEAR) &&
-            day.month == today.get(Calendar.MONTH) &&
-            day.day == today.get(Calendar.DAY_OF_MONTH) &&
-            day.isCurrentMonth) {
-            holder.dayContainer.setBackgroundResource(R.drawable.circle_highlight)
+        val isToday = day.year == today.get(Calendar.YEAR) &&
+                day.month == today.get(Calendar.MONTH) &&
+                day.day == today.get(Calendar.DAY_OF_MONTH) &&
+                day.isCurrentMonth
+
+        if (isToday) {
+            dayHighlight.setBackgroundResource(R.drawable.circle_highlight)
         } else {
-            holder.dayContainer.background = null
+            dayHighlight.background = null
         }
 
-        // TODO: 感情アイコンの表示（将来実装）
-        // val emotionIcon = holder.itemView.findViewById<ImageView>(R.id.emotionIcon)
-        // loadEmotionIcon(day, emotionIcon)
+        // 感情アイコンの表示（1日から昨日まで）
+        val targetDate = Calendar.getInstance().apply {
+            set(day.year, day.month, day.day, 0, 0, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        val todayDate = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        // 当月で、1日から昨日まで（今日以前で今日は除く）
+        if (day.isCurrentMonth &&
+            day.day >= 1 &&
+            targetDate.before(todayDate)) {
+
+            holder.emotionIcon.visibility = View.VISIBLE
+
+            // 日付によって異なるアイコンを表示（テスト用）
+            val iconRes = when (day.day % 5) {
+                0 -> R.drawable.emoji_very_happy
+                1 -> R.drawable.emoji_happy
+                2 -> R.drawable.emoji_neutral
+                3 -> R.drawable.emoji_sad
+                else -> R.drawable.emoji_very_sad
+            }
+            holder.emotionIcon.setImageResource(iconRes)
+        } else {
+            holder.emotionIcon.visibility = View.INVISIBLE
+        }
     }
 
     override fun getItemCount() = days.size
+}
+
+class CalendarItemDecoration : RecyclerView.ItemDecoration() {
+    private val paint = Paint().apply {
+        color = Color.parseColor("#000000")
+        strokeWidth = 1f
+        style = Paint.Style.STROKE
+    }
+
+    override fun getItemOffsets(
+        outRect: Rect,
+        view: View,
+        parent: RecyclerView,
+        state: RecyclerView.State
+    ) {
+        val position = parent.getChildAdapterPosition(view)
+        val spanCount = 7
+
+        // 週の最後のアイテム（土曜日）の下にスペースを追加
+        if ((position + 1) % spanCount == 0 && position < state.itemCount - 1) {
+            outRect.bottom = 1
+        }
+    }
+
+    override fun onDraw(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
+        val spanCount = 7
+        val childCount = parent.childCount
+
+        for (i in 0 until childCount) {
+            val child = parent.getChildAt(i)
+            val position = parent.getChildAdapterPosition(child)
+
+            // 週の最後（土曜日の下）に横線を描画
+            if ((position + 1) % spanCount == 0 && position < state.itemCount - spanCount) {
+                val left = parent.paddingLeft.toFloat()
+                val right = (parent.width - parent.paddingRight).toFloat()
+                val bottom = child.bottom.toFloat()
+
+                c.drawLine(left, bottom, right, bottom, paint)
+            }
+        }
+    }
 }

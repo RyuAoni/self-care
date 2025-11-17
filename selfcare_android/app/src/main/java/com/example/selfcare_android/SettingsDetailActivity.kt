@@ -1,231 +1,276 @@
 package com.example.selfcare_android
 
-// --- 必要なimport文 ---
-// SharedPreferences関連（MODE_PRIVATEなど）は不要になります
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Spinner
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
-// ----------------------
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import java.util.Calendar
 
 class SettingsDetailActivity : AppCompatActivity() {
 
-    // DataRepository のインスタンスを準備
-    private val repository by lazy { DataRepository(applicationContext) }
-
-    // --- UI要素を定義 ---
-    // (lateinit var を使うと findViewById が1回で済みます)
-    private lateinit var detailType: String
+    // 設定値を保持
     private lateinit var spinnerGender: Spinner
     private lateinit var spinnerYear: Spinner
     private lateinit var spinnerMonth: Spinner
     private lateinit var spinnerDay: Spinner
-
-    // --- 他のビュー（XMLにあれば） ---
-    private lateinit var editEmail: EditText // (古いコードにあったもの)
-    private lateinit var editHobby: EditText // (古いコードにあったもの)
-    private lateinit var editFavorite: EditText // (古いコードにあったもの)
+    private lateinit var editOccupation: EditText
+    private lateinit var editHobby: EditText
+    private lateinit var editFavorite: EditText
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings_detail)
 
-        // どの項目を開いているか取得
-        detailType = intent.getStringExtra("DETAIL_TYPE") ?: ""
-
         // ビューの初期化
         initViews()
 
-        // トップバー設定 (保存・閉じるボタンの処理)
+        // トップバー設定
         setupTopBar()
 
-        // Spinnerの項目設定（例: 1950年〜2025年を設定）
-        // ※この関数は既に存在すると仮定
+        // Spinnerの設定
         setupSpinners()
 
         // ボトムナビゲーション設定
-        // ※この関数は既に存在すると仮定
         setupBottomNavigation()
 
-        // 保存されているデータを読み込み (新しいロジック)
+        // 保存されているデータを読み込み
         loadUserData()
     }
 
-    /**
-     * UI要素のIDを関連付ける
-     * (※ここのIDをご自身のXMLファイルに合わせてください)
-     */
     private fun initViews() {
-        // XMLのIDと一致させてください
         spinnerGender = findViewById(R.id.spinnerGender)
-
         spinnerYear = findViewById(R.id.spinnerYear)
         spinnerMonth = findViewById(R.id.spinnerMonth)
         spinnerDay = findViewById(R.id.spinnerDay)
-        editEmail = findViewById(R.id.editEmail)
+        editOccupation = findViewById(R.id.editOccupation)
         editHobby = findViewById(R.id.editHobby)
         editFavorite = findViewById(R.id.editFavorite)
     }
 
-    /**
-     * トップバー（閉じる・保存）のクリック処理を設定
-     */
     private fun setupTopBar() {
         // 閉じるボタン
         findViewById<ImageView>(R.id.buttonClose).setOnClickListener {
             finish()
         }
 
-        // 保存ボタン (R.id.buttonSave)
+        // 保存ボタン
         findViewById<TextView>(R.id.buttonSave).setOnClickListener {
-            // 保存処理は非同期（launch）で行う
-            lifecycleScope.launch {
-                saveUserData() // 保存処理（下記で定義）
-                finish()       // 保存が終わったら画面を閉じる
-            }
+            saveUserData()
         }
     }
 
-    /**
-     * データ読み込み (SharedPreferences -> DataRepository に変更)
-     */
-    private fun loadUserData() {
-        // 最初にすべての関連UIを非表示にする
-        editEmail.visibility = View.GONE
-        editHobby.visibility = View.GONE
-        editFavorite.visibility = View.GONE
-        spinnerGender.visibility = View.GONE
-        spinnerYear.visibility = View.GONE
-        spinnerMonth.visibility = View.GONE
-        spinnerDay.visibility = View.GONE
-
-        lifecycleScope.launch {
-            // 1. DataRepositoryから設定をロード
-            val settings = repository.loadData().settings
-
-            // 2. detailTypeに応じてUIを表示し、データをセット
-            when (detailType) {
-                // 【！】"NAME"用のEditTextがないため、仮でeditHobbyを使います
-                // XMLに "editName" などを追加するのがベストです。
-                "NAME" -> {
-                    editHobby.visibility = View.VISIBLE
-                    editHobby.setText(settings?.name ?: "")
-                    editHobby.hint = "名前を入力" // ヒントを上書き
-                }
-                "GENDER" -> {
-                    spinnerGender.visibility = View.VISIBLE
-                    val savedGender = settings?.gender
-                    val genderPosition = when (savedGender) {
-                        "男性" -> 1
-                        "女性" -> 2
-                        "その他" -> 3
-                        "回答しない" -> 4
-                        else -> 0 // 未選択
-                    }
-                    spinnerGender.setSelection(genderPosition)
-                }
-                "BIRTHDAY" -> {
-                    spinnerYear.visibility = View.VISIBLE
-                    spinnerMonth.visibility = View.VISIBLE
-                    spinnerDay.visibility = View.VISIBLE
-                    val savedBirthday = settings?.birthday // 例: "2000/1/15"
-
-                    if (!savedBirthday.isNullOrEmpty()) {
-                        val parts = savedBirthday.split("/")
-                        if (parts.size == 3) {
-                            val year = parts[0]
-                            val month = parts[1] // "1" や "12"
-                            val day = parts[2]   // "1" や "31"
-
-                            // SpinnerのAdapterから値を探してセット
-                            setSpinnerSelection(spinnerYear, year)
-                            setSpinnerSelection(spinnerMonth, month)
-
-                            // ※もし日(Day)Spinnerの中身が月(Month)によって変わる場合、
-                            // setupSpinners()側での対応が必要です。
-                            // ここでは単純に値をセットしに行きます。
-                            setSpinnerSelection(spinnerDay, day)
-                        }
-                    }
-                }
-                "HOBBY" -> {
-                    editHobby.visibility = View.VISIBLE
-                    editHobby.setText(settings?.hobby ?: "")
-                }
-                "FAVORITE" -> {
-                    editFavorite.visibility = View.VISIBLE
-                    editFavorite.setText(settings?.favorite ?: "")
-                }
-                // "EMAIL" など、古いコードにあって今はない項目は無視
-            }
-        }
-    }
-
-    /**
-     * データ保存処理 (suspend関数として分離)
-     */
-    private suspend fun saveUserData() {
-        // 1. まず現在の全データをロード
-        val currentData = repository.loadData()
-        // 2. 現在の設定をロード (なければ新しい設定を作る)
-        val currentSettings = currentData.settings ?: UserSettings()
-
-        // 3. detailTypeに応じて、"どのUIから"データを取得するか変える
-        val newSettings = when (detailType) {
-            "NAME" -> {
-                currentSettings.copy(name = editHobby.text.toString())
-            }
-            "GENDER" -> {
-                // "未選択" が選ばれていないかチェック（任意）
-                currentSettings.copy(gender = spinnerGender.selectedItem.toString())
-            }
-            "BIRTHDAY" -> {
-                val year = spinnerYear.selectedItem.toString()
-                val month = spinnerMonth.selectedItem.toString()
-                val day = spinnerDay.selectedItem.toString()
-                currentSettings.copy(birthday = "$year/$month/$day")
-            }
-            "HOBBY" -> {
-                currentSettings.copy(hobby = editHobby.text.toString())
-            }
-            "FAVORITE" -> {
-                currentSettings.copy(favorite = editFavorite.text.toString())
-            }
-            else -> currentSettings // 不明な場合はそのまま
-        }
-
-        // 4. 新しい設定をセットした全データを保存
-        repository.saveData(currentData.copy(settings = newSettings))
-    }
-
-    /**
-     * Spinnerの値をテキストで検索してセットするヘルパー関数
-     */
-    private fun setSpinnerSelection(spinner: Spinner, value: String?) {
-        if (value == null) return
-        val adapter = spinner.adapter
-        for (i in 0 until adapter.count) {
-            // "1" と "1"、 "12" と "12" を正しく比較する
-            if (adapter.getItem(i).toString() == value) {
-                spinner.setSelection(i)
-                return // 見つかったら終了
-            }
-        }
-        // 見つからなかった場合は 0 番目（"年"など）のまま
-    }
-
-    // --- setupSpinners() や setupBottomNavigation() はここ ---
-    // (既にファイル内に存在すると仮定)
     private fun setupSpinners() {
-        // ... (Spinnerに項目をセットするコード) ...
+        // 性別Spinner
+        val genderOptions = arrayOf("選択してください", "男性", "女性", "その他", "回答しない")
+        val genderAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, genderOptions)
+        genderAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerGender.adapter = genderAdapter
+
+        // 年Spinner(1900年〜現在年)
+        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+        val years = mutableListOf("—")
+        for (year in currentYear downTo 1900) {
+            years.add(year.toString())
+        }
+        val yearAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, years)
+        yearAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerYear.adapter = yearAdapter
+
+        // 月Spinner(1〜12月)
+        val months = mutableListOf("—")
+        for (month in 1..12) {
+            months.add(month.toString())
+        }
+        val monthAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, months)
+        monthAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerMonth.adapter = monthAdapter
+
+        // 日Spinner(1〜31日)
+        val days = mutableListOf("—")
+        for (day in 1..31) {
+            days.add(day.toString())
+        }
+        val dayAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, days)
+        dayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerDay.adapter = dayAdapter
+
+        // 年・月が変更されたら日の選択肢を調整
+        spinnerYear.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                updateDaySpinner()
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        spinnerMonth.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                updateDaySpinner()
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+    }
+
+    private fun updateDaySpinner() {
+        val yearStr = spinnerYear.selectedItem.toString()
+        val monthStr = spinnerMonth.selectedItem.toString()
+
+        if (yearStr == "—" || monthStr == "—") {
+            return
+        }
+
+        val year = yearStr.toIntOrNull() ?: return
+        val month = monthStr.toIntOrNull() ?: return
+
+        // その月の最終日を計算
+        val calendar = Calendar.getInstance()
+        calendar.set(year, month - 1, 1)
+        val maxDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+
+        val days = mutableListOf("—")
+        for (day in 1..maxDay) {
+            days.add(day.toString())
+        }
+
+        val currentSelection = spinnerDay.selectedItemPosition
+        val dayAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, days)
+        dayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerDay.adapter = dayAdapter
+
+        // 以前の選択を維持(範囲内であれば)
+        if (currentSelection < days.size) {
+            spinnerDay.setSelection(currentSelection)
+        }
     }
 
     private fun setupBottomNavigation() {
-        // ... (ボトムナビのコード) ...
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+        // 初期選択を解除する
+        bottomNav.menu.setGroupCheckable(0, true, false)
+        for (i in 0 until bottomNav.menu.size()) {
+            bottomNav.menu.getItem(i).isChecked = false
+        }
+        bottomNav.menu.setGroupCheckable(0, true, true)
+
+
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_stats -> {
+                    val intent = Intent(this, EmotionAnalysisActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                R.id.nav_calendar -> {
+                    val intent = Intent(this, CalendarActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                R.id.nav_profile -> {
+                    val intent = Intent(this, SettingsActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun loadUserData() {
+        val prefs = getSharedPreferences("UserProfile", MODE_PRIVATE)
+
+        // 性別
+        val gender = prefs.getString("gender", "")
+        val genderPosition = when (gender) {
+            "男性" -> 1
+            "女性" -> 2
+            "その他" -> 3
+            "回答しない" -> 4
+            else -> 0
+        }
+        spinnerGender.setSelection(genderPosition)
+
+        // 生年月日
+        val birthday = prefs.getString("birthday", "")
+        if (birthday?.isNotEmpty() == true) {
+            val parts = birthday.split("/")
+            if (parts.size == 3) {
+                val year = parts[0]
+                val month = parts[1]
+                val day = parts[2]
+
+                // 年の選択
+                val yearAdapter = spinnerYear.adapter
+                for (i in 0 until yearAdapter.count) {
+                    if (yearAdapter.getItem(i).toString() == year) {
+                        spinnerYear.setSelection(i)
+                        break
+                    }
+                }
+
+                // 月の選択
+                val monthAdapter = spinnerMonth.adapter
+                for (i in 0 until monthAdapter.count) {
+                    if (monthAdapter.getItem(i).toString() == month.toInt().toString()) {
+                        spinnerMonth.setSelection(i)
+                        break
+                    }
+                }
+
+                // 日の選択
+                spinnerDay.postDelayed({
+                    val dayAdapter = spinnerDay.adapter
+                    for (i in 0 until dayAdapter.count) {
+                        if (dayAdapter.getItem(i).toString() == day.toInt().toString()) {
+                            spinnerDay.setSelection(i)
+                            break
+                        }
+                    }
+                }, 100)
+            }
+        }
+
+        // その他の項目
+        editOccupation.setText(prefs.getString("occupation", ""))
+        editHobby.setText(prefs.getString("hobby", ""))
+        editFavorite.setText(prefs.getString("favorite", ""))
+    }
+
+    private fun saveUserData() {
+        // 入力チェック
+        val gender = spinnerGender.selectedItem.toString()
+        val year = spinnerYear.selectedItem.toString()
+        val month = spinnerMonth.selectedItem.toString()
+        val day = spinnerDay.selectedItem.toString()
+
+        val birthday = if (year != "—" && month != "—" && day != "—") {
+            String.format("%s/%02d/%02d", year, month.toInt(), day.toInt())
+        } else {
+            ""
+        }
+
+        val occupation = editOccupation.text.toString().trim()
+        val hobby = editHobby.text.toString().trim()
+        val favorite = editFavorite.text.toString().trim()
+
+        // 保存
+        val prefs = getSharedPreferences("UserProfile", MODE_PRIVATE)
+        prefs.edit().apply {
+            putString("gender", if (gender == "選択してください") "" else gender)
+            putString("birthday", birthday)
+            putString("occupation", occupation)
+            putString("hobby", hobby)
+            putString("favorite", favorite)
+            apply()
+        }
+
+        Toast.makeText(this, "保存しました", Toast.LENGTH_SHORT).show()
+        finish()
     }
 }

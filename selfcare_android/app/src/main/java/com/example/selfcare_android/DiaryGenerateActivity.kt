@@ -61,6 +61,12 @@ class DiaryGenerateActivity : AppCompatActivity() {
         btnSave.setOnClickListener { saveDiary() }
 
         // フッターのクリック処理
+        // 初期選択を解除する
+        bottomNav.menu.setGroupCheckable(0, true, false)
+        for (i in 0 until bottomNav.menu.size()) {
+            bottomNav.menu.getItem(i).isChecked = false
+        }
+        bottomNav.menu.setGroupCheckable(0, true, true)
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 // カレンダー
@@ -72,12 +78,14 @@ class DiaryGenerateActivity : AppCompatActivity() {
                 }
                 // 統計
                 R.id.nav_stats -> {
-                    Toast.makeText(this, "統計画面", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(this, EmotionAnalysisActivity::class.java)
+                    startActivity(intent)
                     true
                 }
                 // プロフィール
                 R.id.nav_profile -> {
-                    Toast.makeText(this, "プロフィール画面", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(this, SettingsActivity::class.java)
+                    startActivity(intent)
                     true
                 }
                 else -> false
@@ -89,11 +97,13 @@ class DiaryGenerateActivity : AppCompatActivity() {
     private fun saveDiary() {
         val content = etDiaryContent.text.toString()
 
-        if (content.isNotEmpty()) {
-            Toast.makeText(this, "日記を保存しました", Toast.LENGTH_SHORT).show()
-            // Handler(Looper.getMainLooper()).postDelayed({ finish() }, 2000)
-        } else {
-            Toast.makeText(this, "内容を入力してください", Toast.LENGTH_SHORT).show()
-        }
+        Toast.makeText(this, "日記を保存しました", Toast.LENGTH_SHORT).show()
+
+        // 保存処理が終わったあとにCalendarActivityへ移動
+        Handler(Looper.getMainLooper()).postDelayed({
+            val intent = Intent(this, CalendarActivity::class.java)
+            startActivity(intent)
+            finish() // 現在の画面を閉じる
+        }, 1500) // トースト表示を少し見せるための遅延
     }
 }
