@@ -2,12 +2,17 @@ package com.example.selfcare_android
 
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Rect
 import android.os.Bundle
 import android.view.GestureDetector
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -137,6 +142,9 @@ class CalendarActivity : AppCompatActivity() {
             }
         }
         calendarRecyclerView.adapter = calendarAdapter
+
+        // 横線の罫線を追加
+        calendarRecyclerView.addItemDecoration(CalendarItemDecoration())
     }
 
     private fun isFutureDate(day: CalendarDay): Boolean {
@@ -264,6 +272,7 @@ class CalendarAdapter(
     class DayViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val dayText: TextView = view.findViewById(R.id.dayText)
         val dayContainer: View = view.findViewById(R.id.dayContainer)
+        val emotionIcon: ImageView = view.findViewById(R.id.emotionIcon)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DayViewHolder {
@@ -288,21 +297,94 @@ class CalendarAdapter(
         }
 
         // 今日の日付をハイライト
+        val dayHighlight = holder.itemView.findViewById<FrameLayout>(R.id.dayHighlight)
         val today = Calendar.getInstance()
-        if (day.year == today.get(Calendar.YEAR) &&
-            day.month == today.get(Calendar.MONTH) &&
-            day.day == today.get(Calendar.DAY_OF_MONTH) &&
-            day.isCurrentMonth
-        ) {
-            holder.dayContainer.setBackgroundResource(R.drawable.circle_highlight)
+        val isToday = day.year == today.get(Calendar.YEAR) &&
+                day.month == today.get(Calendar.MONTH) &&
+                day.day == today.get(Calendar.DAY_OF_MONTH) &&
+                day.isCurrentMonth
+
+        if (isToday) {
+            dayHighlight.setBackgroundResource(R.drawable.circle_highlight)
         } else {
-            holder.dayContainer.background = null
+            dayHighlight.background = null
         }
 
-        // TODO: 感情アイコンの表示（将来実装）
-        // val emotionIcon = holder.itemView.findViewById<ImageView>(R.id.emotionIcon)
-        // loadEmotionIcon(day, emotionIcon)
+        // 感情アイコンの表示（1日から昨日まで）
+        val targetDate = Calendar.getInstance().apply {
+            set(day.year, day.month, day.day, 0, 0, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        val todayDate = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        // 当月で、1日から昨日まで（今日以前で今日は除く）
+        if (day.isCurrentMonth &&
+            day.day >= 1 &&
+            targetDate.before(todayDate)) {
+
+            holder.emotionIcon.visibility = View.VISIBLE
+
+            // 日付によって異なるアイコンを表示（テスト用）
+            val iconRes = when (day.day % 5) {
+                0 -> R.drawable.emoji_very_happy
+                1 -> R.drawable.emoji_happy
+                2 -> R.drawable.emoji_neutral
+                3 -> R.drawable.emoji_sad
+                else -> R.drawable.emoji_very_sad
+            }
+            holder.emotionIcon.setImageResource(iconRes)
+        } else {
+            holder.emotionIcon.visibility = View.INVISIBLE
+        }
     }
 
     override fun getItemCount() = days.size
+}
+
+class CalendarItemDecoration : RecyclerView.ItemDecoration() {
+    private val paint = Paint().apply {
+        color = Color.parseColor("#000000")
+        strokeWidth = 1f
+        style = Paint.Style.STROKE
+    }
+
+    override fun getItemOffsets(
+        outRect: Rect,
+        view: View,
+        parent: RecyclerView,
+        state: RecyclerView.State
+    ) {
+        val position = parent.getChildAdapterPosition(view)
+        val spanCount = 7
+
+        // 週の最後のアイテム（土曜日）の下にスペースを追加
+        if ((position + 1) % spanCount == 0 && position < state.itemCount - 1) {
+            outRect.bottom = 1
+        }
+    }
+
+    override fun onDraw(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
+        val spanCount = 7
+        val childCount = parent.childCount
+
+        for (i in 0 until childCount) {
+            val child = parent.getChildAt(i)
+            val position = parent.getChildAdapterPosition(child)
+
+            // 週の最後（土曜日の下）に横線を描画
+            if ((position + 1) % spanCount == 0 && position < state.itemCount - spanCount) {
+                val left = parent.paddingLeft.toFloat()
+                val right = (parent.width - parent.paddingRight).toFloat()
+                val bottom = child.bottom.toFloat()
+
+                c.drawLine(left, bottom, right, bottom, paint)
+            }
+        }
+    }
 }
