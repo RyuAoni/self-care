@@ -23,17 +23,13 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <!-- 週選択スピナー（中央寄せ） -->
+        <!-- 週選択スピナー -->
         <Spinner
             android:id="@+id/weekSpinner"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="?attr/selectableItemBackground"
-            android:gravity="center"
             android:minHeight="40dp"
-            android:padding="8dp"
-            android:textStyle="bold"
             android:spinnerMode="dropdown" />
     </LinearLayout>
 
