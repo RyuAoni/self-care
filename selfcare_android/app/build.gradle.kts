@@ -56,4 +56,9 @@ dependencies {
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("com.google.android.material:material:1.11.0")
+    implementation("com.google.code.gson:gson:2.10.1")
+    // 【追加】通信用ライブラリ (OkHttp)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // 【追加】非同期処理用ライブラリ (Coroutines)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 }

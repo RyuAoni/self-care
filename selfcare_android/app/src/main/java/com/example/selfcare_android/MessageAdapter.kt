@@ -67,4 +67,11 @@ class MessageAdapter(private val messages: MutableList<Message>) :
         // 最新のメッセージにスクロール
         // この処理はActivity側で行う方がより一般的ですが、簡単のためActivityで実装します。
     }
+
+    // ★追加: リストを丸ごと更新するメソッド
+    fun setMessages(newMessages: List<Message>) {
+        messages.clear()
+        messages.addAll(newMessages)
+        notifyDataSetChanged()
+    }
 }

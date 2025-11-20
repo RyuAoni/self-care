@@ -2,6 +2,7 @@ package com.example.selfcare_android
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
@@ -11,7 +12,18 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.gson.Gson // 【追加】JSONライブラリをインポート
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import java.util.LinkedList
+import java.util.concurrent.TimeUnit
 
 class DiaryInputActivity : AppCompatActivity() {
 
@@ -20,6 +32,17 @@ class DiaryInputActivity : AppCompatActivity() {
     private var year: Int = 0
     private var month: Int = 0
     private var day: Int = 0
+
+    // ★追加: Supabaseのチャット関数のURL
+    // 必ず自分のSupabaseのURLに書き換えてください！
+    private val SUPABASE_CHAT_URL = "https://gvgntdierpbmygmkrtgy.supabase.co/functions/v1/chat"
+
+    // ★追加: 通信クライアント (タイムアウトを少し長めに設定)
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
+        .build()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,7 +106,7 @@ class DiaryInputActivity : AppCompatActivity() {
                 // 2. 入力フィールドをクリア
                 inputField.setText("")
 
-                // 3. (APIが未実装のため) ダミーのAI応答を生成
+                // 2. ★変更: SupabaseのAIと会話する
                 handleAiResponse(text)
             }
         }
@@ -94,17 +117,78 @@ class DiaryInputActivity : AppCompatActivity() {
 
     // AIの応答を処理するメソッド (API実装の置き換え場所)
     private fun handleAiResponse(userText: String) {
-        // --- 将来的にAPIをコールする場所 ---
+        // 通信中は「入力中...」などを出しても良いですが、今回はシンプルに非同期で実行
 
-        // 現時点では、即座にダミーのAIメッセージを返す
-        val aiResponseText = "なるほど、${userText}。それは楽しそうですね。詳しく聞かせてください。"
+        // CoroutineScopeでバックグラウンド処理を開始
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // 1. 送信データの作成 (JSON)
+                // サーバー側は { "messages": [ { "role": "user", "content": "..." } ] } を期待しています
+                val messagesJson = listOf(
+                    mapOf("role" to "user", "content" to userText)
+                )
 
-        // ダミーメッセージをリストに追加
-        val aiMessage = Message(text = aiResponseText, type = MESSAGE_TYPE_AI)
-        messageAdapter.addMessage(aiMessage)
+                // 過去の会話履歴を含めたい場合はここで messageList を変換して追加しますが、
+                // まずは「直前の1往復」だけ送るシンプル構成にします。
 
-        // 最新のメッセージにスクロール
-        findViewById<RecyclerView>(R.id.chat_history_view).scrollToPosition(messageAdapter.itemCount - 1)
+                val jsonBody = JSONObject().apply {
+                    put("messages", Gson().toJsonTree(messagesJson))
+                    // 必要ならシステムプロンプトもここで送れます
+                    // put("systemPrompt", "あなたは優しいカウンセラーです。")
+                }
+
+                val requestBody = jsonBody.toString()
+                    .toRequestBody("application/json; charset=utf-8".toMediaType())
+
+                // 2. リクエストの作成 (Authorizationヘッダーが必要な場合は追加)
+                val request = Request.Builder()
+                    .url(SUPABASE_CHAT_URL)
+                    .post(requestBody)
+                    // Supabaseの設定で "Enforce JWT" がONの場合はAuthorizationヘッダーが必要になりますが、
+                    // 初期のEdge Functionは公開設定の場合が多いです。
+                    // エラーが出る場合は .header("Authorization", "Bearer [ANON_KEY]") を追加します。
+                    .build()
+
+                // 3. API呼び出し実行
+                val response = client.newCall(request).execute()
+
+                if (response.isSuccessful) {
+                    val responseBody = response.body?.string()
+                    val jsonResponse = JSONObject(responseBody ?: "{}")
+
+                    // サーバーからの返事: { "role": "assistant", "message": "..." }
+                    val aiText = jsonResponse.optString("message", "（応答なし）")
+
+                    // 4. メインスレッドに戻って画面を更新
+                    withContext(Dispatchers.Main) {
+                        val aiMessage = Message(text = aiText, type = MESSAGE_TYPE_AI)
+                        messageAdapter.addMessage(aiMessage)
+                        findViewById<RecyclerView>(R.id.chat_history_view)
+                            .scrollToPosition(messageAdapter.itemCount - 1)
+                    }
+                } else {
+                    val errorMsg = "エラー: ${response.code}"
+                    Log.e("DiaryInput", "API Error: $errorMsg")
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            this@DiaryInputActivity,
+                            "AIの応答に失敗しました",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        this@DiaryInputActivity,
+                        "通信エラーが発生しました",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
     }
 
     private fun loadExistingDiary() {
@@ -129,26 +213,39 @@ class DiaryInputActivity : AppCompatActivity() {
     }
 
     private fun generateDiary() {
-        val prefs = getSharedPreferences("DiaryData", MODE_PRIVATE)
-        val editor = prefs.edit()
-        val key = "${year}_${month}_${day}"
+        val conversationsForTransfer: List<ConversationData> = messageList.map { it.toConversationData() }
+        val gson = Gson()
+        val conversationsJson = gson.toJson(conversationsForTransfer)
+//        val prefs = getSharedPreferences("DiaryData", MODE_PRIVATE)
+//        val editor = prefs.edit()
+//        val key = "${year}_${month}_${day}"
 
-        // メッセージ数を保存
-        editor.putInt("${key}_count", messageList.size)
-
-        // 各メッセージを保存
-        messageList.forEachIndexed { index, message ->
-            editor.putString("${key}_msg_${index}_text", message.text)
-            editor.putInt("${key}_msg_${index}_type", message.type)
+        // 3. DiaryGenerateActivity に遷移
+        val intent = Intent(this, DiaryGenerateActivity::class.java).apply {
+            // 日付情報を渡す
+            putExtra("year", year)
+            putExtra("month", month)
+            putExtra("day", day)
+            // 会話履歴のJSON文字列を渡す
+            putExtra("EXTRA_CONVERSATIONS_JSON", conversationsJson)
         }
 
-        editor.apply()
-
-        // DiaryGenerateActivity に遷移
-        val intent = Intent(this, DiaryGenerateActivity::class.java)
-        intent.putExtra("year", year)
-        intent.putExtra("month", month)
-        intent.putExtra("day", day)
+        // メッセージ数を保存
+//        editor.putInt("${key}_count", messageList.size)
+//
+//        // 各メッセージを保存
+//        messageList.forEachIndexed { index, message ->
+//            editor.putString("${key}_msg_${index}_text", message.text)
+//            editor.putInt("${key}_msg_${index}_type", message.type)
+//        }
+//
+//        editor.apply()
+//
+//        // DiaryGenerateActivity に遷移
+//        val intent = Intent(this, DiaryGenerateActivity::class.java)
+//        intent.putExtra("year", year)
+//        intent.putExtra("month", month)
+//        intent.putExtra("day", day)
         startActivity(intent)
     }
 

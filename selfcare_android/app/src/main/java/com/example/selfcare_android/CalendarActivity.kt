@@ -30,6 +30,10 @@ class CalendarActivity : AppCompatActivity() {
     private lateinit var calendarAdapter: CalendarAdapter
     private val calendar = Calendar.getInstance()
     private val days = mutableListOf<CalendarDay>()
+
+    // ★追加: 読み込んだ日記データを保持するリスト
+    private var diaryList: List<DiaryEntry> = emptyList()
+
     private lateinit var gestureDetector: GestureDetectorCompat
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,6 +45,24 @@ class CalendarActivity : AppCompatActivity() {
         setupBottomNavigation()
         setupGestureDetector()
         updateCalendar()
+    }
+
+    // ★追加: 画面が表示されるたびにデータを再読み込みする
+    override fun onResume() {
+        super.onResume()
+        loadDiaryData()
+        updateCalendar()
+    }
+
+    // ★追加: JSONファイルから日記データを読み込む処理
+    private fun loadDiaryData() {
+        val appData = JsonDataManager.load(this)
+        diaryList = appData.diaries
+
+        // アダプターに最新データを渡す
+        if (::calendarAdapter.isInitialized) {
+            calendarAdapter.updateDiaries(diaryList)
+        }
     }
 
     private fun setupViews() {
@@ -203,7 +225,12 @@ class CalendarActivity : AppCompatActivity() {
             days.add(CalendarDay(day, false, currentYear, currentMonth + 1))
         }
 
-        calendarAdapter.notifyDataSetChanged()
+        // アダプターにデータ変更を通知
+        if (::calendarAdapter.isInitialized) {
+            // 日記データも最新であることを保証
+            calendarAdapter.updateDiaries(diaryList)
+            calendarAdapter.notifyDataSetChanged()
+        }
     }
 
     private fun openDayDetail(day: CalendarDay) {
@@ -218,12 +245,23 @@ class CalendarActivity : AppCompatActivity() {
         today.set(Calendar.SECOND, 0)
         today.set(Calendar.MILLISECOND, 0)
 
+        // ★修正: 日記が存在するかチェック
+        val dateString = String.format(Locale.getDefault(), "%04d/%02d/%02d", day.year, day.month + 1, day.day)
+        val hasDiary = diaryList.any { it.date == dateString }
+
         val intent = if (target.before(today)) {
             // 昨日以前 → DiaryDetailActivity
             Intent(this, DiaryDetailActivity::class.java)
         } else {
-            // 今日 → DiaryInputActivity
-            Intent(this, DiaryInputActivity::class.java)
+            // 日記がない場合
+            if (target.before(today)) {
+                // 過去の日付なら、入力画面を開くか詳細画面を開くか検討が必要。
+                // ここでは「過去の日記も書ける」ように入力画面へ遷移させます（または空の詳細画面）
+                Intent(this, DiaryInputActivity::class.java)
+            } else {
+                // 今日なら入力画面へ
+                Intent(this, DiaryInputActivity::class.java)
+            }
         }
 
         intent.putExtra("year", day.year)
@@ -266,8 +304,14 @@ data class CalendarDay(
 
 class CalendarAdapter(
     private val days: List<CalendarDay>,
+    private var diaries: List<DiaryEntry>, // ★追加: 日記データのリストを受け取る
     private val onDayClick: (CalendarDay) -> Unit
 ) : RecyclerView.Adapter<CalendarAdapter.DayViewHolder>() {
+
+    // ★追加: データを更新するためのメソッド
+    fun updateDiaries(newDiaries: List<DiaryEntry>) {
+        this.diaries = newDiaries
+    }
 
     class DayViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val dayText: TextView = view.findViewById(R.id.dayText)
@@ -310,38 +354,61 @@ class CalendarAdapter(
             dayHighlight.background = null
         }
 
-        // 感情アイコンの表示（1日から昨日まで）
-        val targetDate = Calendar.getInstance().apply {
-            set(day.year, day.month, day.day, 0, 0, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
+        // ★修正: JSONデータに基づいてアイコンを表示
+        // カレンダーの日付を文字列 "yyyy/MM/dd" に変換して検索
+        val dateString = String.format(Locale.getDefault(), "%04d/%02d/%02d", day.year, day.month + 1, day.day)
+        val diaryEntry = diaries.find { it.date == dateString }
 
-        val todayDate = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-
-        // 当月で、1日から昨日まで（今日以前で今日は除く）
-        if (day.isCurrentMonth &&
-            day.day >= 1 &&
-            targetDate.before(todayDate)) {
-
+        if (day.isCurrentMonth && diaryEntry != null) {
             holder.emotionIcon.visibility = View.VISIBLE
 
-            // 日付によって異なるアイコンを表示（テスト用）
-            val iconRes = when (day.day % 5) {
-                0 -> R.drawable.emoji_very_happy
-                1 -> R.drawable.emoji_happy
-                2 -> R.drawable.emoji_neutral
-                3 -> R.drawable.emoji_sad
+            // 感情スコアに基づいてアイコンを変更
+            val score = diaryEntry.emotionScore.toDoubleOrNull() ?: 0.0
+            val iconRes = when {
+                score >= 0.6 -> R.drawable.emoji_very_happy
+                score >= 0.2 -> R.drawable.emoji_happy
+                score >= -0.2 -> R.drawable.emoji_neutral // 0.0 はここに含まれる
+                score >= -0.6 -> R.drawable.emoji_sad
                 else -> R.drawable.emoji_very_sad
             }
             holder.emotionIcon.setImageResource(iconRes)
+
         } else {
             holder.emotionIcon.visibility = View.INVISIBLE
         }
+
+//        // 感情アイコンの表示（1日から昨日まで）
+//        val targetDate = Calendar.getInstance().apply {
+//            set(day.year, day.month, day.day, 0, 0, 0)
+//            set(Calendar.MILLISECOND, 0)
+//        }
+//
+//        val todayDate = Calendar.getInstance().apply {
+//            set(Calendar.HOUR_OF_DAY, 0)
+//            set(Calendar.MINUTE, 0)
+//            set(Calendar.SECOND, 0)
+//            set(Calendar.MILLISECOND, 0)
+//        }
+//
+//        // 当月で、1日から昨日まで（今日以前で今日は除く）
+//        if (day.isCurrentMonth &&
+//            day.day >= 1 &&
+//            targetDate.before(todayDate)) {
+//
+//            holder.emotionIcon.visibility = View.VISIBLE
+//
+//            // 日付によって異なるアイコンを表示（テスト用）
+//            val iconRes = when (day.day % 5) {
+//                0 -> R.drawable.emoji_very_happy
+//                1 -> R.drawable.emoji_happy
+//                2 -> R.drawable.emoji_neutral
+//                3 -> R.drawable.emoji_sad
+//                else -> R.drawable.emoji_very_sad
+//            }
+//            holder.emotionIcon.setImageResource(iconRes)
+//        } else {
+//            holder.emotionIcon.visibility = View.INVISIBLE
+//        }
     }
 
     override fun getItemCount() = days.size
