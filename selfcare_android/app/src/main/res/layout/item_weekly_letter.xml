@@ -29,7 +29,28 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
             android:background="#E0E0E0"/>
+
+        <TextView
+            android:id="@+id/letterTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="週次お手紙"
+            android:textColor="#000000"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/letterContentPreview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:text="タップして詳細を見る"
+            android:textColor="#666666"
+            android:textSize="14sp" />
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>
