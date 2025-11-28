@@ -33,15 +33,23 @@
             android:layout_marginVertical="16dp"
             android:background="#E0E0E0"/>
 
-        <TextView
-            android:id="@+id/letterContent"
+        <!-- 可変の本文エリア：weight で縦幅を調整 -->
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="○○さん、\n1週間お疲れ様でした！"
-            android:textSize="16sp"
-            android:textColor="#333333"
-            android:lineSpacingExtra="8dp"
-            android:minHeight="200dp"/>
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:overScrollMode="ifContentScrolls"
+            android:scrollbars="vertical">
+
+            <TextView
+                android:id="@+id/letterContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="○○さん、\n1週間お疲れ様でした！"
+                android:textSize="16sp"
+                android:textColor="#333333"
+                android:lineSpacingExtra="8dp"/>
+        </ScrollView>
 
     </LinearLayout>
 
