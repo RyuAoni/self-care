@@ -122,31 +122,26 @@ class DiaryInputActivity : AppCompatActivity() {
         // CoroutineScopeでバックグラウンド処理を開始
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // 1. 送信データの作成 (JSON)
-                // サーバー側は { "messages": [ { "role": "user", "content": "..." } ] } を期待しています
-                val messagesJson = listOf(
-                    mapOf("role" to "user", "content" to userText)
+                // 1. 送信データの作成 (修正: Gsonだけで完結させる)
+                // 送信したいデータをMapとListの組み合わせで作ります
+                val requestData = mapOf(
+                    "messages" to listOf(
+                        mapOf("role" to "user", "content" to userText)
+                    )
+                    // 必要ならシステムプロンプトもここに追加できます
+                    // "systemPrompt" to "あなたは優しいカウンセラーです"
                 )
 
-                // 過去の会話履歴を含めたい場合はここで messageList を変換して追加しますが、
-                // まずは「直前の1往復」だけ送るシンプル構成にします。
+                // Gsonを使って、Map全体を一発で正しいJSON文字列に変換する
+                val jsonString = Gson().toJson(requestData)
 
-                val jsonBody = JSONObject().apply {
-                    put("messages", Gson().toJsonTree(messagesJson))
-                    // 必要ならシステムプロンプトもここで送れます
-                    // put("systemPrompt", "あなたは優しいカウンセラーです。")
-                }
-
-                val requestBody = jsonBody.toString()
+                val requestBody = jsonString
                     .toRequestBody("application/json; charset=utf-8".toMediaType())
 
-                // 2. リクエストの作成 (Authorizationヘッダーが必要な場合は追加)
+                // 2. リクエストの作成
                 val request = Request.Builder()
                     .url(SUPABASE_CHAT_URL)
                     .post(requestBody)
-                    // Supabaseの設定で "Enforce JWT" がONの場合はAuthorizationヘッダーが必要になりますが、
-                    // 初期のEdge Functionは公開設定の場合が多いです。
-                    // エラーが出る場合は .header("Authorization", "Bearer [ANON_KEY]") を追加します。
                     .build()
 
                 // 3. API呼び出し実行
@@ -154,9 +149,9 @@ class DiaryInputActivity : AppCompatActivity() {
 
                 if (response.isSuccessful) {
                     val responseBody = response.body?.string()
+                    // 受信データの解析 (ここはJSONObjectのままでOK)
                     val jsonResponse = JSONObject(responseBody ?: "{}")
 
-                    // サーバーからの返事: { "role": "assistant", "message": "..." }
                     val aiText = jsonResponse.optString("message", "（応答なし）")
 
                     // 4. メインスレッドに戻って画面を更新
@@ -169,12 +164,12 @@ class DiaryInputActivity : AppCompatActivity() {
                 } else {
                     val errorMsg = "エラー: ${response.code}"
                     Log.e("DiaryInput", "API Error: $errorMsg")
+                    // エラーの内容をログに出す（デバッグ用）
+                    val errorBody = response.body?.string()
+                    Log.e("DiaryInput", "Error Body: $errorBody")
+
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(
-                            this@DiaryInputActivity,
-                            "AIの応答に失敗しました",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(this@DiaryInputActivity, "AIの応答に失敗しました ($errorMsg)", Toast.LENGTH_SHORT).show()
                     }
                 }
 
