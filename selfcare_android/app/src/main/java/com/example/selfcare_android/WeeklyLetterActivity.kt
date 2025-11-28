@@ -237,7 +237,7 @@ class WeeklyLetterActivity : AppCompatActivity() {
         }
     }
 
-    private fun showLetterDialog(letter: WeeklyLetter) {
+    private fun showLetterDialog(title: String, content: String) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_weekly_letter, null)
 
         dialogView.findViewById<TextView>(R.id.letterTitle).text = title

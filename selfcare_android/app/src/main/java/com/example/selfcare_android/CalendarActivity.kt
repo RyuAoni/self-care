@@ -157,7 +157,7 @@ class CalendarActivity : AppCompatActivity() {
 
     private fun setupCalendar() {
         calendarRecyclerView.layoutManager = GridLayoutManager(this, 7)
-        calendarAdapter = CalendarAdapter(days) { day ->
+        calendarAdapter = CalendarAdapter(days, diaryList) { day ->
             // 当月かつ今日以前の日付のみクリック可能
             if (day.isCurrentMonth && !isFutureDate(day)) {
                 openDayDetail(day)
