@@ -51,7 +51,7 @@ class AlbumActivity : AppCompatActivity() {
         }
 
         // 空の時のテキスト（レイアウトにあれば）
-        emptyText = findViewById(R.id.emptyText) ?: TextView(this)
+        emptyText = findViewById(R.id.emptyText)
 
 //        setupTopBar()
         setupRecyclerView()

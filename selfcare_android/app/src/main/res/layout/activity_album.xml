@@ -58,17 +58,30 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- 写真追加FAB -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabAddPhoto"
+    <TextView
+        android:id="@+id/emptyText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:src="@android:drawable/ic_input_add"
-        app:backgroundTint="#C5D6A8"
-        app:tint="#FFFFFF"
-        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+        android:text="まだ写真がありません"
+        android:textColor="#999999"
+        android:textSize="16sp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
+<!--    &lt;!&ndash; 写真追加FAB &ndash;&gt;-->
+<!--    <com.google.android.material.floatingactionbutton.FloatingActionButton-->
+<!--        android:id="@+id/fabAddPhoto"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_margin="16dp"-->
+<!--        android:src="@android:drawable/ic_input_add"-->
+<!--        app:backgroundTint="#C5D6A8"-->
+<!--        app:tint="#FFFFFF"-->
+<!--        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"-->
+<!--        app:layout_constraintEnd_toEndOf="parent" />-->
 
     <!-- ボトムナビゲーション -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
