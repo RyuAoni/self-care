@@ -181,13 +181,14 @@ class DiaryDetailActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_calendar -> {
-                    finish()
+                    val intent = Intent(this, CalendarActivity::class.java)
+                    startActivity(intent)
                     true
                 }
                 R.id.nav_profile -> {
                     val intent = Intent(this, SettingsActivity::class.java)
                     startActivity(intent)
-                    finish()
+//                    finish()
                     true
                 }
                 else -> false

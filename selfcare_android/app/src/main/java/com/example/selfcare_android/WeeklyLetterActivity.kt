@@ -68,65 +68,106 @@ class WeeklyLetterActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.letterRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // 1. 過去4週間分くらいの「週の範囲」リストを作る
-        val weeks = generatePastWeeks(4)
-
-        // 2. 保存済みの手紙データをロード
+        // 1. データをロード
         val appData = JsonDataManager.load(this)
         val savedLetters = appData.weeklyLetters
+        val diaries = appData.diaries
+
+        // 2. 日記データから「週の範囲」リストを生成 (データがある週だけ)
+        // もし日記が1件もなければ、今週分だけ表示する
+        val weeks = if (diaries.isNotEmpty()) {
+            getWeeksFromDiaries(diaries)
+        } else {
+            getWeeksFromDiaries(emptyList()) // 空の場合は今週を表示
+        }
 
         // 3. 表示用データに変換
-        // (保存済みならその内容を、なければ「未生成」として扱う)
         val displayList = weeks.map { weekRange ->
             val found = savedLetters.find { it.period == weekRange }
             if (found != null) {
-                // すでに手紙がある場合
+                // 生成済み
                 WeeklyLetterDisplayItem(weekRange, found.title, found.content, true)
             } else {
-                // 手紙がまだない場合
+                // 未生成（日記はあるが手紙はまだ）
                 WeeklyLetterDisplayItem(weekRange, "${weekRange}の\n週次お手紙", "タップして手紙を作成する", false)
             }
         }
 
         adapter = WeeklyLetterAdapter(displayList) { item ->
             if (item.isGenerated) {
-                // 既にある場合はダイアログで表示
                 showLetterDialog(item.title, item.content)
             } else {
-                // まだない場合は生成確認ダイアログを表示
                 showGenerateConfirmDialog(item.period)
             }
         }
         recyclerView.adapter = adapter
     }
 
-    // 直近n週間分の期間文字列リストを生成 (例: "11/03~11/09")
-    private fun generatePastWeeks(weeksCount: Int): List<String> {
-        val list = mutableListOf<String>()
+    // ★修正: 日記データに含まれる日付から「週の範囲」のリストを作成する関数
+    private fun getWeeksFromDiaries(diaries: List<DiaryEntry>): List<String> {
+        val sdf = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault())
+        val periodFormat = SimpleDateFormat("MM/dd", Locale.getDefault())
         val calendar = Calendar.getInstance()
-
-        // 週の始まりを日曜日に設定
         calendar.firstDayOfWeek = Calendar.SUNDAY
-        // 今日が含まれる週の日曜日へ移動
-        calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
 
-        val sdf = SimpleDateFormat("MM/dd", Locale.getDefault())
+        // 日記の日付をパースしてSetに格納（重複排除）
+        val uniqueWeeks = mutableSetOf<String>()
 
-        for (i in 0 until weeksCount) {
-            // 週の終わりの土曜日
-            val endCal = calendar.clone() as Calendar
-            endCal.add(Calendar.DAY_OF_MONTH, 6)
+        // 日記がない場合でも「今週」は表示したいので、今日の日付を追加しておく
+        val datesToCheck = diaries.mapNotNull {
+            try { sdf.parse(it.date) } catch (e: Exception) { null }
+        }.toMutableList()
 
-            val startStr = sdf.format(calendar.time)
-            val endStr = sdf.format(endCal.time)
-
-            list.add("$startStr~$endStr")
-
-            // 1週間前に戻る
-            calendar.add(Calendar.WEEK_OF_YEAR, -1)
+        if (datesToCheck.isEmpty()) {
+            datesToCheck.add(Date()) // 今日の日付
         }
-        return list
+
+        // 日付ごとに「その週の範囲」を計算
+        for (date in datesToCheck) {
+            calendar.time = date
+
+            // 週の開始日（日曜日）へ
+            calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
+            val startStr = periodFormat.format(calendar.time)
+
+            // 週の終了日（土曜日）へ
+            calendar.add(Calendar.DAY_OF_MONTH, 6)
+            val endStr = periodFormat.format(calendar.time)
+
+            uniqueWeeks.add("$startStr~$endStr")
+        }
+
+        // 新しい順（降順）に並べ替えてリスト化
+        return uniqueWeeks.sortedDescending()
     }
+
+//    // 直近n週間分の期間文字列リストを生成 (例: "11/03~11/09")
+//    private fun generatePastWeeks(weeksCount: Int): List<String> {
+//        val list = mutableListOf<String>()
+//        val calendar = Calendar.getInstance()
+//
+//        // 週の始まりを日曜日に設定
+//        calendar.firstDayOfWeek = Calendar.SUNDAY
+//        // 今日が含まれる週の日曜日へ移動
+//        calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
+//
+//        val sdf = SimpleDateFormat("MM/dd", Locale.getDefault())
+//
+//        for (i in 0 until weeksCount) {
+//            // 週の終わりの土曜日
+//            val endCal = calendar.clone() as Calendar
+//            endCal.add(Calendar.DAY_OF_MONTH, 6)
+//
+//            val startStr = sdf.format(calendar.time)
+//            val endStr = sdf.format(endCal.time)
+//
+//            list.add("$startStr~$endStr")
+//
+//            // 1週間前に戻る
+//            calendar.add(Calendar.WEEK_OF_YEAR, -1)
+//        }
+//        return list
+//    }
 
     // 生成確認ダイアログ
     private fun showGenerateConfirmDialog(period: String) {
@@ -276,8 +317,8 @@ class WeeklyLetterActivity : AppCompatActivity() {
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_stats -> {
-//                    val intent = Intent(this, EmotionAnalysisActivity::class.java)
-//                    startActivity(intent)
+                    val intent = Intent(this, EmotionAnalysisActivity::class.java)
+                    startActivity(intent)
                     true
                 }
                 R.id.nav_calendar -> {

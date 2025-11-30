@@ -106,8 +106,8 @@ class DiaryInputActivity : AppCompatActivity() {
                 messageAdapter.addMessage(userMessage)
                 recyclerView.scrollToPosition(messageAdapter.itemCount - 1) // 最新へスクロール
 
-//                // 2. 入力フィールドをクリア
-//                inputField.setText("")
+                // 2. 入力フィールドをクリア
+                inputField.setText("")
                 // ★追加: ユーザーのメッセージを保存
                 saveConversationToStorage()
 
@@ -128,16 +128,24 @@ class DiaryInputActivity : AppCompatActivity() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 // 1. 送信データの作成 (修正: Gsonだけで完結させる)
-                // 送信したいデータをMapとListの組み合わせで作ります
-                val requestData = mapOf(
-                    "messages" to listOf(
-                        mapOf("role" to "user", "content" to userText)
+                // ★重要: Geminiは「会話の開始はユーザーから」というルールがあるため、
+                // messageListの先頭にあるAIの挨拶メッセージなどは除外して送ります。
+                val validMessages = messageList.dropWhile { it.type == MESSAGE_TYPE_AI }
+
+                val messagesToSend = validMessages.map { msg ->
+                    val role = if (msg.type == MESSAGE_TYPE_USER) "user" else "model"
+                    mapOf(
+                        "role" to role,
+                        "content" to msg.text
                     )
-                    // 必要ならシステムプロンプトもここに追加できます
-                    // "systemPrompt" to "あなたは優しいカウンセラーです"
+                }
+
+                // 送信データ全体を作る
+                val requestData = mapOf(
+                    "messages" to messagesToSend
                 )
 
-                // Gsonを使って、Map全体を一発で正しいJSON文字列に変換する
+                // Gsonを使ってJSON文字列に変換
                 val jsonString = Gson().toJson(requestData)
 
                 val requestBody = jsonString
@@ -154,7 +162,6 @@ class DiaryInputActivity : AppCompatActivity() {
 
                 if (response.isSuccessful) {
                     val responseBody = response.body?.string()
-                    // 受信データの解析 (ここはJSONObjectのままでOK)
                     val jsonResponse = JSONObject(responseBody ?: "{}")
 
                     val aiText = jsonResponse.optString("message", "（応答なし）")
@@ -165,13 +172,15 @@ class DiaryInputActivity : AppCompatActivity() {
                         messageAdapter.addMessage(aiMessage)
                         findViewById<RecyclerView>(R.id.chat_history_view)
                             .scrollToPosition(messageAdapter.itemCount - 1)
+
+                        // AIのメッセージも保存
+                        saveConversationToStorage()
                     }
                 } else {
                     val errorMsg = "エラー: ${response.code}"
                     Log.e("DiaryInput", "API Error: $errorMsg")
-                    // エラーの内容をログに出す（デバッグ用）
-                    val errorBody = response.body?.string()
-                    Log.e("DiaryInput", "Error Body: $errorBody")
+                    // エラーの詳細をログに出す
+                    Log.e("DiaryInput", "Error Body: ${response.body?.string()}")
 
                     withContext(Dispatchers.Main) {
                         Toast.makeText(this@DiaryInputActivity, "AIの応答に失敗しました ($errorMsg)", Toast.LENGTH_SHORT).show()

@@ -274,7 +274,7 @@ class CalendarActivity : AppCompatActivity() {
         val dateString = String.format(Locale.getDefault(), "%04d/%02d/%02d", day.year, day.month + 1, day.day)
 
         // その日の日記データが存在するかチェック
-        val targetEntry = diaryList.any { it.date == dateString }
+        val targetEntry = diaryList.find { it.date == dateString }
 
         // データが存在し、かつ日記の中身が空でない（＝生成＆保存済み）場合のみ「完了」とみなす
         val isCompleted = targetEntry != null && targetEntry.diaryContent.isNotEmpty()
@@ -306,7 +306,7 @@ class CalendarActivity : AppCompatActivity() {
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_stats -> {
-                    val intent = Intent(this, WeeklyLetterActivity::class.java)
+                    val intent = Intent(this, EmotionAnalysisActivity::class.java)
                     startActivity(intent)
                     true
                 }
@@ -390,7 +390,7 @@ class CalendarAdapter(
         val dateString = String.format(Locale.getDefault(), "%04d/%02d/%02d", day.year, day.month + 1, day.day)
         val diaryEntry = diaries.find { it.date == dateString }
 
-        if (day.isCurrentMonth && diaryEntry != null) {
+        if (day.isCurrentMonth && diaryEntry != null && diaryEntry.diaryContent?.isNotEmpty() == true) {
             holder.emotionIcon.visibility = View.VISIBLE
 
             // 感情スコアに基づいてアイコンを変更
