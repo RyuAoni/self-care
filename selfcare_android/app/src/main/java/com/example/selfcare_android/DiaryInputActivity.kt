@@ -23,6 +23,8 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.util.LinkedList
+import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 class DiaryInputActivity : AppCompatActivity() {
@@ -87,10 +89,11 @@ class DiaryInputActivity : AppCompatActivity() {
         // --- 初期メッセージ（AIからの導入メッセージ） ---
         if (messageList.isEmpty()) {
             val initialMessage = Message(
-                text = "AI日記アシスタントです。今日はどんな一日でしたか？会話形式で教えてください。",
+                text = "AI日記アシスタントです。今日はどんな一日でしたか？",
                 type = MESSAGE_TYPE_AI
             )
             messageAdapter.addMessage(initialMessage)
+            saveConversationToStorage()
         }
 
         // --- 送信ボタンのクリック処理（文字送信機能のコア） ---
@@ -103,8 +106,10 @@ class DiaryInputActivity : AppCompatActivity() {
                 messageAdapter.addMessage(userMessage)
                 recyclerView.scrollToPosition(messageAdapter.itemCount - 1) // 最新へスクロール
 
-                // 2. 入力フィールドをクリア
-                inputField.setText("")
+//                // 2. 入力フィールドをクリア
+//                inputField.setText("")
+                // ★追加: ユーザーのメッセージを保存
+                saveConversationToStorage()
 
                 // 2. ★変更: SupabaseのAIと会話する
                 handleAiResponse(text)
@@ -186,24 +191,76 @@ class DiaryInputActivity : AppCompatActivity() {
         }
     }
 
+//    private fun loadExistingDiary() {
+//        val prefs = getSharedPreferences("DiaryData", MODE_PRIVATE)
+//        val key = "${year}_${month}_${day}"
+//
+//        // 保存されたメッセージ数を取得
+//        val messageCount = prefs.getInt("${key}_count", 0)
+//
+//        // メッセージを読み込む
+//        for (i in 0 until messageCount) {
+//            val text = prefs.getString("${key}_msg_${i}_text", "") ?: ""
+//            val type = prefs.getInt("${key}_msg_${i}_type", MESSAGE_TYPE_USER)
+//            if (text.isNotEmpty()) {
+//                messageList.add(Message(text = text, type = type))
+//            }
+//        }
+//
+//        if (messageList.isNotEmpty()) {
+//            messageAdapter.notifyDataSetChanged()
+//        }
+//    }
     private fun loadExistingDiary() {
-        val prefs = getSharedPreferences("DiaryData", MODE_PRIVATE)
-        val key = "${year}_${month}_${day}"
+        // 今日の日付文字列を作成 (保存時と同じフォーマット)
+        val dateString = String.format(Locale.getDefault(), "%04d/%02d/%02d", year, month + 1, day)
 
-        // 保存されたメッセージ数を取得
-        val messageCount = prefs.getInt("${key}_count", 0)
+        val appData = JsonDataManager.load(this)
+        val entry = appData.diaries.find { it.date == dateString }
 
-        // メッセージを読み込む
-        for (i in 0 until messageCount) {
-            val text = prefs.getString("${key}_msg_${i}_text", "") ?: ""
-            val type = prefs.getInt("${key}_msg_${i}_type", MESSAGE_TYPE_USER)
-            if (text.isNotEmpty()) {
-                messageList.add(Message(text = text, type = type))
+        if (entry != null) {
+            // 保存されている会話データを読み込む
+            messageList.clear()
+            entry.conversations.forEach { convData ->
+                messageList.add(convData.toMessage())
             }
-        }
-
-        if (messageList.isNotEmpty()) {
             messageAdapter.notifyDataSetChanged()
+        }
+    }
+
+    private fun saveConversationToStorage() {
+        // 非同期（バックグラウンド）で保存処理を行う
+        CoroutineScope(Dispatchers.IO).launch {
+            val dateString = String.format(Locale.getDefault(), "%04d/%02d/%02d", year, month + 1, day)
+
+            // 現在のリストを保存用データ型に変換
+            val conversationsToSave = messageList.map { it.toConversationData() }
+
+            val appData = JsonDataManager.load(this@DiaryInputActivity)
+            val existingEntryIndex = appData.diaries.indexOfFirst { it.date == dateString }
+
+            if (existingEntryIndex != -1) {
+                // 既に日記データがある場合は、会話部分だけ更新する
+                val oldEntry = appData.diaries[existingEntryIndex]
+                val updatedEntry = oldEntry.copy(conversations = conversationsToSave)
+                appData.diaries[existingEntryIndex] = updatedEntry
+            } else {
+                // データがない場合は新規作成
+                val newEntry = DiaryEntry(
+                    id = UUID.randomUUID().toString(),
+                    date = dateString,
+                    conversations = conversationsToSave,
+                    stepCount = "0",     // 仮の値
+                    diaryContent = "",   // まだ生成していないので空
+                    emotionScore = "0.0",
+                    positiveScore = "0.0",
+                    negativeScore = "0.0"
+                )
+                appData.diaries.add(newEntry)
+            }
+
+            // ファイルに書き込み
+            JsonDataManager.save(this@DiaryInputActivity, appData)
         }
     }
 

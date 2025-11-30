@@ -233,35 +233,58 @@ class CalendarActivity : AppCompatActivity() {
         }
     }
 
+//    private fun openDayDetail(day: CalendarDay) {
+//        val today = Calendar.getInstance()
+//        val target = Calendar.getInstance().apply {
+//            set(day.year, day.month, day.day, 0, 0, 0)
+//            set(Calendar.MILLISECOND, 0)
+//        }
+//
+//        today.set(Calendar.HOUR_OF_DAY, 0)
+//        today.set(Calendar.MINUTE, 0)
+//        today.set(Calendar.SECOND, 0)
+//        today.set(Calendar.MILLISECOND, 0)
+//
+//        // ★修正: 日記が存在するかチェック
+//        val dateString = String.format(Locale.getDefault(), "%04d/%02d/%02d", day.year, day.month + 1, day.day)
+//        val hasDiary = diaryList.any { it.date == dateString }
+//
+//        val intent = if (target.before(today)) {
+//            // 昨日以前 → DiaryDetailActivity
+//            Intent(this, DiaryDetailActivity::class.java)
+//        } else {
+//            // 日記がない場合
+//            if (target.before(today)) {
+//                // 過去の日付なら、入力画面を開くか詳細画面を開くか検討が必要。
+//                // ここでは「過去の日記も書ける」ように入力画面へ遷移させます（または空の詳細画面）
+//                Intent(this, DiaryInputActivity::class.java)
+//            } else {
+//                // 今日なら入力画面へ
+//                Intent(this, DiaryInputActivity::class.java)
+//            }
+//        }
+//
+//        intent.putExtra("year", day.year)
+//        intent.putExtra("month", day.month)
+//        intent.putExtra("day", day.day)
+//        startActivity(intent)
+//    }
+
     private fun openDayDetail(day: CalendarDay) {
-        val today = Calendar.getInstance()
-        val target = Calendar.getInstance().apply {
-            set(day.year, day.month, day.day, 0, 0, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-
-        today.set(Calendar.HOUR_OF_DAY, 0)
-        today.set(Calendar.MINUTE, 0)
-        today.set(Calendar.SECOND, 0)
-        today.set(Calendar.MILLISECOND, 0)
-
-        // ★修正: 日記が存在するかチェック
         val dateString = String.format(Locale.getDefault(), "%04d/%02d/%02d", day.year, day.month + 1, day.day)
-        val hasDiary = diaryList.any { it.date == dateString }
 
-        val intent = if (target.before(today)) {
-            // 昨日以前 → DiaryDetailActivity
+        // その日の日記データが存在するかチェック
+        val targetEntry = diaryList.any { it.date == dateString }
+
+        // データが存在し、かつ日記の中身が空でない（＝生成＆保存済み）場合のみ「完了」とみなす
+        val isCompleted = targetEntry != null && targetEntry.diaryContent.isNotEmpty()
+
+        val intent = if (isCompleted) {
+            // 日記があれば、詳細画面（結果画面）を開く
             Intent(this, DiaryDetailActivity::class.java)
         } else {
-            // 日記がない場合
-            if (target.before(today)) {
-                // 過去の日付なら、入力画面を開くか詳細画面を開くか検討が必要。
-                // ここでは「過去の日記も書ける」ように入力画面へ遷移させます（または空の詳細画面）
-                Intent(this, DiaryInputActivity::class.java)
-            } else {
-                // 今日なら入力画面へ
-                Intent(this, DiaryInputActivity::class.java)
-            }
+            // 日記がなければ、入力画面を開く
+            Intent(this, DiaryInputActivity::class.java)
         }
 
         intent.putExtra("year", day.year)
@@ -272,10 +295,18 @@ class CalendarActivity : AppCompatActivity() {
 
     private fun setupBottomNavigation() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+
+        // 初期選択状態のクリア
+        bottomNav.menu.setGroupCheckable(0, true, false)
+        for (i in 0 until bottomNav.menu.size()) {
+            bottomNav.menu.getItem(i).isChecked = false
+        }
+        bottomNav.menu.setGroupCheckable(0, true, true)
+
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_stats -> {
-                    val intent = Intent(this, EmotionAnalysisActivity::class.java)
+                    val intent = Intent(this, WeeklyLetterActivity::class.java)
                     startActivity(intent)
                     true
                 }

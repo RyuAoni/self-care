@@ -13,10 +13,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.UUID
 import com.google.gson.Gson // 【追加】JSON変換ライブラリ
 import com.google.gson.reflect.TypeToken // 【追加】JSONリストの型指定
 import kotlinx.coroutines.CoroutineScope
@@ -28,6 +24,10 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 //  日記生成画面
@@ -53,11 +53,12 @@ class DiaryGenerateActivity : AppCompatActivity() {
     // ★追加: SupabaseのSentiment関数のURL
     // [あなたのプロジェクトID] の部分を書き換えてください
     private val SUPABASE_SENTIMENT_URL = "https://gvgntdierpbmygmkrtgy.supabase.co/functions/v1/sentiment"
+    private val SUPABASE_DIARY_URL = "https://gvgntdierpbmygmkrtgy.supabase.co/functions/v1/diary"
 
     // 通信クライアント
     private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
+        .connectTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,6 +78,13 @@ class DiaryGenerateActivity : AppCompatActivity() {
 
         // 歩数センサーの初期化と計測開始
         stepSensorManager = StepSensorManager(this)
+
+        // ★画面が開いたら、会話履歴をもとに日記を自動生成する
+        if (receivedConversations.isNotEmpty()) {
+            generateDiarySummary()
+        } else {
+            etDiaryContent.hint = "会話履歴がありません。今日はどんな一日でしたか？"
+        }
     }
 
     override fun onResume() {
@@ -147,15 +155,86 @@ class DiaryGenerateActivity : AppCompatActivity() {
                 }
                 // 統計
                 R.id.nav_stats -> {
-                    Toast.makeText(this, "統計画面", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(this, WeeklyLetterActivity::class.java)
+                    startActivity(intent)
                     true
                 }
                 // プロフィール
                 R.id.nav_profile -> {
-                    Toast.makeText(this, "プロフィール画面", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(this, SettingsActivity::class.java)
+                    startActivity(intent)
                     true
                 }
                 else -> false
+            }
+        }
+    }
+
+    // ★追加: Supabaseの日記生成APIを呼び出す
+    private fun generateDiarySummary() {
+        etDiaryContent.setText("日記を生成中...")
+        etDiaryContent.isEnabled = false // 生成中は編集不可にする
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // 1. 送信データの作成
+                // サーバーは { "messages": [...], "date": "..." } を期待
+                val messagesPayload = receivedConversations.map {
+                    mapOf("role" to it.commentator, "content" to it.text)
+                }
+
+                val dateString = "${targetYear}年${targetMonth + 1}月${targetDay}日"
+
+                val requestData = mapOf(
+                    "messages" to messagesPayload,
+                    "date" to dateString
+                )
+
+                val jsonString = Gson().toJson(requestData)
+                val requestBody = jsonString.toRequestBody("application/json; charset=utf-8".toMediaType())
+
+                val request = Request.Builder()
+                    .url(SUPABASE_DIARY_URL)
+                    .post(requestBody)
+                    .build()
+
+                // 2. API呼び出し
+                val response = client.newCall(request).execute()
+
+                if (response.isSuccessful) {
+                    val responseBody = response.body?.string()
+                    val json = JSONObject(responseBody ?: "{}")
+                    val diaryText = json.optString("diary", "")
+
+                    // 3. UI更新
+                    withContext(Dispatchers.Main) {
+                        if (diaryText.isNotEmpty()) {
+                            etDiaryContent.setText(diaryText)
+                        } else {
+                            etDiaryContent.setText("")
+                            etDiaryContent.hint = "日記の生成に失敗しました"
+                        }
+                        etDiaryContent.isEnabled = true
+                    }
+                } else {
+                    val errorMsg = "生成エラー: ${response.code}"
+                    Log.e("DiaryGenerate", errorMsg)
+                    withContext(Dispatchers.Main) {
+                        etDiaryContent.setText("")
+                        etDiaryContent.hint = "日記の生成に失敗しました (サーバーエラー)"
+                        etDiaryContent.isEnabled = true
+                        Toast.makeText(this@DiaryGenerateActivity, errorMsg, Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    etDiaryContent.setText("")
+                    etDiaryContent.hint = "通信エラーが発生しました"
+                    etDiaryContent.isEnabled = true
+                    Toast.makeText(this@DiaryGenerateActivity, "通信エラー", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -238,7 +317,11 @@ class DiaryGenerateActivity : AppCompatActivity() {
                     saveDiaryData(content, "0.0", "0.0", "0.0")
                     btnSave.text = "保存"
                     btnSave.isEnabled = true
-                    finish()
+//                    finish()
+
+                    val intent = Intent(this@DiaryGenerateActivity, CalendarActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    startActivity(intent)
                 }
             }
         }
