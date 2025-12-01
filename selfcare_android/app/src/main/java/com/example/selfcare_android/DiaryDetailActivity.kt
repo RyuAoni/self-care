@@ -85,6 +85,9 @@ class DiaryDetailActivity : AppCompatActivity() {
         messageAdapter = MessageAdapter(mutableListOf())
         chatRecyclerView.layoutManager = LinearLayoutManager(this)
         chatRecyclerView.adapter = messageAdapter
+
+        // ★重要: リスト自体のスクロールを無効化し、全体スクロールに任せる設定
+        chatRecyclerView.isNestedScrollingEnabled = false
     }
 
     // ★追加: デモモード用の機能
