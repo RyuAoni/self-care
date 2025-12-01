@@ -1,6 +1,7 @@
 package com.example.selfcare_android
 
 //画面遷移(Intent)とフッター(BottomNavigationView)のためにインポート
+import android.app.DatePickerDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -16,6 +17,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -33,6 +35,7 @@ import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
@@ -65,6 +68,7 @@ class DiaryGenerateActivity : AppCompatActivity() {
     private var isEditing: Boolean = false
     private var selectedImageUri: Uri? = null // 選んだ画像のURI
     private var savedImagePath: String? = null // 保存後のファイルパス
+    private var isDemoMode: Boolean = false // ★デモモードフラグ
 
     // 歩数管理マネージャー
     private lateinit var stepSensorManager: StepSensorManager
@@ -96,10 +100,15 @@ class DiaryGenerateActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_diary_generate) // レイアウト適用
 
+        // ★デモモード設定の読み込み (SettingsDetailActivityと同じファイル名・キーを使用)
+        val prefs = getSharedPreferences("AppConfig", MODE_PRIVATE)
+        isDemoMode = prefs.getBoolean("demo_mode", false)
+
         // 【追加】Intentからデータを受け取る処理
         receiveDataFromIntent()
         initViews()       // UI初期化
         setupListeners()  // ボタン動作設定
+        setupDemoFeatures() // ★デモ機能のセットアップ
 
         // タイトルに日付を表示（例: 11月11日）
         if (targetYear != 0) {
@@ -188,7 +197,14 @@ class DiaryGenerateActivity : AppCompatActivity() {
         }
 
         // 保存ボタン
-        btnSave.setOnClickListener { analyzeAndSaveDiary() }
+        btnSave.setOnClickListener {
+            // ★変更: デモモードなら歩数入力ダイアログを出す
+            if (isDemoMode) {
+                showDemoStepDialog()
+            } else {
+                analyzeAndSaveDiary(null) // 通常保存（歩数はセンサー値）
+            }
+        }
 
 //        btnImage.setOnClickListener {
 //            Toast.makeText(this, "画像を追加", Toast.LENGTH_SHORT).show()
@@ -227,6 +243,57 @@ class DiaryGenerateActivity : AppCompatActivity() {
 //        }
         setupBottomNavigation()
 
+    }
+
+    // ★追加: デモモード用の機能（日付変更）
+    private fun setupDemoFeatures() {
+        if (isDemoMode) {
+            // タイトルタップで日付変更可能にする
+            tvTitle.setOnClickListener {
+                // 日付未設定なら現在日時を初期値にする
+                val cYear = if (targetYear != 0) targetYear else Calendar.getInstance().get(Calendar.YEAR)
+                val cMonth = if (targetMonth != 0) targetMonth else Calendar.getInstance().get(Calendar.MONTH)
+                val cDay = if (targetDay != 0) targetDay else Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
+
+                val datePickerDialog = DatePickerDialog(
+                    this,
+                    { _, year, month, dayOfMonth ->
+                        targetYear = year
+                        targetMonth = month
+                        targetDay = dayOfMonth
+                        updateTitleDate()
+                        Toast.makeText(this, "日付を変更しました（デモ）", Toast.LENGTH_SHORT).show()
+                    },
+                    cYear, cMonth, cDay
+                )
+                datePickerDialog.show()
+            }
+            // デモモード中であることがわかるように色を変える
+            tvTitle.setTextColor(android.graphics.Color.parseColor("#FF5722")) // オレンジ色など
+        }
+    }
+
+    // ★追加: デモモード用の歩数入力ダイアログ
+    private fun showDemoStepDialog() {
+        val input = EditText(this)
+        input.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        input.hint = "歩数を入力 (例: 8000)"
+        input.setText(stepSensorManager.currentSteps.toString()) // 現在値を初期値にセット
+
+        AlertDialog.Builder(this)
+            .setTitle("【デモ】歩数を入力")
+            .setView(input)
+            .setPositiveButton("保存") { _, _ ->
+                val steps = input.text.toString()
+                // 入力された歩数を使って保存処理へ
+                analyzeAndSaveDiary(steps)
+            }
+            .setNegativeButton("キャンセル", null)
+            .show()
+    }
+
+    private fun updateTitleDate() {
+        tvTitle.text = "${targetMonth + 1}月${targetDay}日"
     }
 
     // 編集モードの切り替え処理
@@ -322,7 +389,7 @@ class DiaryGenerateActivity : AppCompatActivity() {
     }
 
     // ★変更: サーバーで感情分析をしてから保存する処理
-    private fun analyzeAndSaveDiary() {
+    private fun analyzeAndSaveDiary(dummySteps: String?) {
         val content = etDiaryContent.text.toString()
 //        if (content.isEmpty()) {
 //            Toast.makeText(this, "内容を入力してください", Toast.LENGTH_SHORT).show()
@@ -419,8 +486,11 @@ class DiaryGenerateActivity : AppCompatActivity() {
                     Log.e("DiaryGenerate", "Sentiment analysis failed: ${e.message}")
                 }
 
+                // ★修正: ダミー歩数があればそれを、なければセンサー値を使用
+                val stepsToSave = dummySteps ?: stepSensorManager.currentSteps.toString()
+
                 // 2. データの保存処理 (メインスレッドで実行しなくてOKだが、完了後のUI操作はメインで)
-                saveDiaryData(content, emotionScore, positiveScore, negativeScore, savedImagePath)
+                saveDiaryData(content, emotionScore, positiveScore, negativeScore, savedImagePath, stepsToSave)
 
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@DiaryGenerateActivity, "保存しました！", Toast.LENGTH_SHORT).show()
@@ -479,8 +549,8 @@ class DiaryGenerateActivity : AppCompatActivity() {
     }
 
     // 内部保存処理
-    private fun saveDiaryData(content: String, emotion: String, pos: String, neg: String, imagePath: String?) {
-        val currentSteps = stepSensorManager.currentSteps.toString()
+    private fun saveDiaryData(content: String, emotion: String, pos: String, neg: String, imagePath: String?, steps: String) {
+//        val currentSteps = stepSensorManager.currentSteps.toString()
 
         val dateString = if (targetYear != 0) {
             String.format(Locale.getDefault(), "%04d/%02d/%02d", targetYear, targetMonth + 1, targetDay)
@@ -499,7 +569,7 @@ class DiaryGenerateActivity : AppCompatActivity() {
             id = if (existingIndex != -1) appData.diaries[existingIndex].id else UUID.randomUUID().toString(), // IDは引き継ぐ
             date = dateString,
             conversations = receivedConversations,
-            stepCount = currentSteps,
+            stepCount = steps,
             diaryContent = content,
             imagePath = imagePath, // ★画像パスを保存
             emotionScore = emotion,

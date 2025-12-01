@@ -1,15 +1,20 @@
 package com.example.selfcare_android
 
+import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import java.util.Calendar
 import java.util.Locale
 
 class DiaryDetailActivity : AppCompatActivity() {
@@ -23,13 +28,21 @@ class DiaryDetailActivity : AppCompatActivity() {
     private lateinit var chatRecyclerView: RecyclerView
     private lateinit var tvStepCount: TextView
     private lateinit var imgEmotion: ImageView
+    private lateinit var tvDateTitle: TextView // 日付タイトル
 
     // アダプター
     private lateinit var messageAdapter: MessageAdapter
 
+    // デモモード管理
+    private var isDemoMode: Boolean = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_diary_detail)
+
+        // デモモード設定の読み込み
+        val prefs = getSharedPreferences("AppConfig", MODE_PRIVATE)
+        isDemoMode = prefs.getBoolean("demo_mode", false)
 
         year = intent.getIntExtra("year", 0)
         month = intent.getIntExtra("month", 0)
@@ -40,6 +53,7 @@ class DiaryDetailActivity : AppCompatActivity() {
         setupRecyclerView()
         setupBottomNavigation()
         loadDiaryData(year, month, day)
+        setupDemoFeatures() // ★追加: デモ機能
     }
 
     private fun setupViews() {
@@ -52,6 +66,7 @@ class DiaryDetailActivity : AppCompatActivity() {
 
         tvStepCount = findViewById(R.id.stepCountText) // ★ID要確認
         imgEmotion = findViewById(R.id.emotionIcon) // ★ID要確認
+        tvDateTitle = findViewById(R.id.dateTitle)
     }
 
     private fun setupTopBar(year: Int, month: Int, day: Int) {
@@ -59,15 +74,124 @@ class DiaryDetailActivity : AppCompatActivity() {
         backButton.setOnClickListener {
             finish()
         }
+        updateDateTitle(year, month, day)
+    }
 
-        findViewById<TextView>(R.id.dateTitle).text =
-            "${month + 1}月${day}日の日記"
+    private fun updateDateTitle(year: Int, month: Int, day: Int) {
+        tvDateTitle.text = "${month + 1}月${day}日の日記"
     }
 
     private fun setupRecyclerView() {
         messageAdapter = MessageAdapter(mutableListOf())
         chatRecyclerView.layoutManager = LinearLayoutManager(this)
         chatRecyclerView.adapter = messageAdapter
+    }
+
+    // ★追加: デモモード用の機能
+    private fun setupDemoFeatures() {
+        if (isDemoMode) {
+            // 1. 日付をタップして変更（日記データを別の日付に移動）
+            tvDateTitle.setOnClickListener {
+                showDatePickerDialog()
+            }
+            tvDateTitle.setTextColor(android.graphics.Color.parseColor("#FF5722")) // 色でわかるように
+
+            // 2. 歩数をタップして変更
+            tvStepCount.setOnClickListener {
+                showStepEditDialog()
+            }
+            tvStepCount.setTextColor(android.graphics.Color.parseColor("#FF5722"))
+        }
+    }
+
+    // 日付変更ダイアログ
+    private fun showDatePickerDialog() {
+        val datePickerDialog = DatePickerDialog(
+            this,
+            { _, newYear, newMonth, newDay ->
+                moveDiaryDate(newYear, newMonth, newDay)
+            },
+            year, month, day
+        )
+        datePickerDialog.show()
+    }
+
+    // 日記の日付データを移動する処理
+    private fun moveDiaryDate(newYear: Int, newMonth: Int, newDay: Int) {
+        val oldDateString = String.format(Locale.getDefault(), "%04d/%02d/%02d", year, month + 1, day)
+        val newDateString = String.format(Locale.getDefault(), "%04d/%02d/%02d", newYear, newMonth + 1, newDay)
+
+        val appData = JsonDataManager.load(this)
+        val targetEntry = appData.diaries.find { it.date == oldDateString }
+
+        if (targetEntry != null) {
+            // 日付を書き換えた新しいデータを作成
+            val updatedEntry = targetEntry.copy(date = newDateString)
+
+            // リスト内のデータを入れ替え（または削除して追加）
+            val index = appData.diaries.indexOf(targetEntry)
+            if (index != -1) {
+                appData.diaries[index] = updatedEntry
+                JsonDataManager.save(this, appData)
+
+                // 画面の変数を更新して再表示
+                year = newYear
+                month = newMonth
+                day = newDay
+                updateDateTitle(year, month, day)
+                loadDiaryData(year, month, day)
+
+                Toast.makeText(this, "日付を移動しました（デモ）", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            // データがない場合でも、画面上の日付だけ更新（空の状態で移動）
+            year = newYear
+            month = newMonth
+            day = newDay
+            updateDateTitle(year, month, day)
+            loadDiaryData(year, month, day)
+        }
+    }
+
+    // 歩数変更ダイアログ
+    private fun showStepEditDialog() {
+        val input = EditText(this)
+        input.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        input.hint = "歩数を入力"
+
+        AlertDialog.Builder(this)
+            .setTitle("【デモ】歩数を変更")
+            .setView(input)
+            .setPositiveButton("保存") { _, _ ->
+                val newSteps = input.text.toString()
+                if (newSteps.isNotEmpty()) {
+                    updateDiarySteps(newSteps)
+                }
+            }
+            .setNegativeButton("キャンセル", null)
+            .show()
+    }
+
+    // 歩数データを更新する処理
+    private fun updateDiarySteps(newSteps: String) {
+        val dateString = String.format(Locale.getDefault(), "%04d/%02d/%02d", year, month + 1, day)
+        val appData = JsonDataManager.load(this)
+        val targetEntry = appData.diaries.find { it.date == dateString }
+
+        if (targetEntry != null) {
+            val updatedEntry = targetEntry.copy(stepCount = newSteps)
+            val index = appData.diaries.indexOf(targetEntry)
+            if (index != -1) {
+                appData.diaries[index] = updatedEntry
+                JsonDataManager.save(this, appData)
+
+                // 画面更新
+                loadDiaryData(year, month, day)
+                Toast.makeText(this, "歩数を変更しました（デモ）", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Toast.makeText(this, "データがないため変更できません", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun loadDiaryData(year: Int, month: Int, day: Int) {
@@ -182,6 +306,8 @@ class DiaryDetailActivity : AppCompatActivity() {
                 }
                 R.id.nav_calendar -> {
                     val intent = Intent(this, CalendarActivity::class.java)
+                    // スタックをクリアしてカレンダーに戻る
+                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     startActivity(intent)
                     true
                 }
@@ -198,7 +324,12 @@ class DiaryDetailActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        // 設定が変わっている可能性があるのでデモモード再確認
+        val prefs = getSharedPreferences("AppConfig", MODE_PRIVATE)
+        isDemoMode = prefs.getBoolean("demo_mode", false)
+
         // 日記が更新されている可能性があるので再読み込み
         loadDiaryData(year, month, day)
+        setupDemoFeatures() // デモ機能の再セットアップ
     }
 }
