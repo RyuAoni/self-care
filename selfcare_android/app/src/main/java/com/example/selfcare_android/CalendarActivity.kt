@@ -1,11 +1,10 @@
 package com.example.selfcare_android
 
+import android.Manifest
 import android.app.DatePickerDialog
 import android.content.Intent
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Rect
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.GestureDetector
 import android.view.LayoutInflater
@@ -15,6 +14,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GestureDetectorCompat
 import androidx.recyclerview.widget.GridLayoutManager
@@ -22,6 +22,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import java.util.*
 import kotlin.math.abs
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Rect
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 class CalendarActivity : AppCompatActivity() {
 
@@ -52,6 +58,9 @@ class CalendarActivity : AppCompatActivity() {
             }
         }
     }
+    // ★追加: 歩数センサー管理
+    private lateinit var stepSensorManager: StepSensorManager
+    private val REQUEST_CODE_ACTIVITY_RECOGNITION = 100
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,6 +69,12 @@ class CalendarActivity : AppCompatActivity() {
         val scheduler = AlarmScheduler(this)
         // 毎日指定時刻に通知（例: 19:30）
         scheduler.setDailyAlarm(19, 0)
+
+        // ★追加: 権限チェックとリクエスト
+        checkAndRequestPermissions()
+
+        // ★追加: センサー初期化
+        stepSensorManager = StepSensorManager(this)
 
         setupViews()
         setupCalendar()
@@ -73,6 +88,48 @@ class CalendarActivity : AppCompatActivity() {
         super.onResume()
         loadDiaryData()
         updateCalendar()
+        // ★追加: 計測開始
+        stepSensorManager.startListening()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // ★追加: 計測一時停止
+        stepSensorManager.stopListening()
+    }
+
+    // ★追加: 権限リクエストのロジック
+    private fun checkAndRequestPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.ACTIVITY_RECOGNITION
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.ACTIVITY_RECOGNITION),
+                    REQUEST_CODE_ACTIVITY_RECOGNITION
+                )
+            }
+        }
+    }
+
+    // ★追加: 権限リクエスト結果の受け取り
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CODE_ACTIVITY_RECOGNITION) {
+            if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                // 許可されたら計測開始
+                stepSensorManager.startListening()
+            } else {
+                Toast.makeText(this, "歩数を記録するには権限が必要です", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     // ★追加: JSONファイルから日記データを読み込む処理

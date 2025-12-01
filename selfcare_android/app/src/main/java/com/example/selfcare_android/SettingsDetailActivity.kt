@@ -12,6 +12,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.materialswitch.MaterialSwitch // ★追加
 import java.util.Calendar
 
 class SettingsDetailActivity : AppCompatActivity() {
@@ -24,6 +25,7 @@ class SettingsDetailActivity : AppCompatActivity() {
     private lateinit var editOccupation: EditText
     private lateinit var editHobby: EditText
     private lateinit var editFavorite: EditText
+    private lateinit var demoModeSwitch: MaterialSwitch // ★追加
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,6 +45,8 @@ class SettingsDetailActivity : AppCompatActivity() {
 
         // 保存されているデータを読み込み
         loadUserData()
+
+        setupDemoSwitch() // ★追加
     }
 
     private fun initViews() {
@@ -53,6 +57,23 @@ class SettingsDetailActivity : AppCompatActivity() {
         editOccupation = findViewById(R.id.editOccupation)
         editHobby = findViewById(R.id.editHobby)
         editFavorite = findViewById(R.id.editFavorite)
+        demoModeSwitch = findViewById(R.id.demoModeSwitch) // ★追加
+    }
+
+    // ★追加: デモモードの設定
+    private fun setupDemoSwitch() {
+        // プロフィールとは別の "AppConfig" に保存する
+        val prefs = getSharedPreferences("AppConfig", MODE_PRIVATE)
+
+        // 保存された状態を反映
+        demoModeSwitch.isChecked = prefs.getBoolean("demo_mode", false)
+
+        // 切り替え時の処理
+        demoModeSwitch.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("demo_mode", isChecked).apply()
+            val status = if (isChecked) "ON" else "OFF"
+            Toast.makeText(this, "デモモードを ${status} にしました", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun setupTopBar() {

@@ -2,7 +2,6 @@ package com.example.selfcare_android
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,10 +27,11 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Locale
 import java.util.Date
+import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import android.util.Log
 
 class WeeklyLetterActivity : AppCompatActivity() {
 
@@ -94,7 +95,7 @@ class WeeklyLetterActivity : AppCompatActivity() {
         adapter = WeeklyLetterAdapter(displayList) { item ->
             Log.d(TAG, "Item clicked: ${item.period}, isGenerated: ${item.isGenerated}")
             if (item.isGenerated) {
-                showLetterDialog(item.title, item.content)
+                showLetterDialog(item.title, item.content, item.period)
             } else {
                 showGenerateConfirmDialog(item.period)
             }
@@ -179,22 +180,29 @@ class WeeklyLetterActivity : AppCompatActivity() {
                     return@launch
                 }
 
+                // ★追加: ユーザー設定から名前を取得
+                val prefs = getSharedPreferences("UserProfile", MODE_PRIVATE)
+                val userName = prefs.getString("user_name", "あなた") ?: "あなた"
+
                 val diariesPayload = targetDiaries.map {
                     mapOf("date" to it.date, "content" to it.diaryContent)
                 }
 
                 val payload = mapOf(
                     "diaries" to diariesPayload,
-                    "weekRange" to period
+                    "weekRange" to period,
+                    "userName" to userName
                 )
 
                 val jsonBody = Gson().toJson(payload)
                 Log.d(TAG, "generateWeeklyLetter: Sending request to $SUPABASE_WEEKLY_LETTER_URL")
                 Log.d(TAG, "generateWeeklyLetter: Payload: $jsonBody")
 
+                val requestBody = jsonBody.toRequestBody("application/json; charset=utf-8".toMediaType())
+
                 val request = Request.Builder()
                     .url(SUPABASE_WEEKLY_LETTER_URL)
-                    .post(jsonBody.toRequestBody("application/json".toMediaType()))
+                    .post(requestBody)
                     .build()
 
                 val response = client.newCall(request).execute()
@@ -205,24 +213,34 @@ class WeeklyLetterActivity : AppCompatActivity() {
                     Log.d(TAG, "generateWeeklyLetter: Response body: $responseBody")
 
                     val json = JSONObject(responseBody)
-                    val letterContent = json.optString("letter", "手紙を受け取れませんでした。")
+                    val letterContent = json.optString("letter", "")
                     Log.d(TAG, "generateWeeklyLetter: Letter content length: ${letterContent.length}")
 
-                    val newLetter = WeeklyLetterData(
-                        id = UUID.randomUUID().toString(),
-                        period = period,
-                        title = "${period}の\n週次お手紙",
-                        content = letterContent
-                    )
+                    if (letterContent.isNotEmpty()) {
+                        val newLetter = WeeklyLetterData(
+                            id = UUID.randomUUID().toString(),
+                            period = period,
+                            title = "${period}の\n週次お手紙",
+                            content = letterContent
+                        )
 
-                    appData.weeklyLetters.add(newLetter)
-                    JsonDataManager.save(this@WeeklyLetterActivity, appData)
-                    Log.d(TAG, "generateWeeklyLetter: Letter saved successfully")
+                        // 既存の同じ期間のデータがあれば削除してから追加（上書き）
+                        appData.weeklyLetters.removeAll { it.period == period }
+                        appData.weeklyLetters.add(0,newLetter)
+                        JsonDataManager.save(this@WeeklyLetterActivity, appData)
+                        Log.d(TAG, "generateWeeklyLetter: Letter saved successfully")
 
-                    withContext(Dispatchers.Main) {
-                        setupRecyclerView()
-                        showLetterDialog(newLetter.title, newLetter.content)
-                        Log.d(TAG, "generateWeeklyLetter: UI updated")
+                        withContext(Dispatchers.Main) {
+                            setupRecyclerView()
+                            showLetterDialog(newLetter.title, newLetter.content, period)
+                            Log.d(TAG, "generateWeeklyLetter: UI updated")
+                        }
+                    } else {
+                        // 成功ステータスだが中身がない場合
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(this@WeeklyLetterActivity, "AIが手紙を生成できませんでした（内容の再確認をお願いします）", Toast.LENGTH_LONG).show()
+                            showErrorRetryDialog("AIが手紙を生成できませんでした。", period)
+                        }
                     }
                 } else {
                     val errorBody = response.body?.string() ?: "No error body"
@@ -241,6 +259,18 @@ class WeeklyLetterActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    // ★追加: エラー時に再試行を促すダイアログ
+    private fun showErrorRetryDialog(message: String, period: String) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("エラー")
+            .setMessage("$message\nもう一度試しますか？")
+            .setNegativeButton("キャンセル", null)
+            .setPositiveButton("再試行") { _, _ ->
+                generateWeeklyLetter(period)
+            }
+            .show()
     }
 
     private fun filterDiariesByPeriod(allDiaries: List<DiaryEntry>, period: String): List<DiaryEntry> {
@@ -280,7 +310,7 @@ class WeeklyLetterActivity : AppCompatActivity() {
         }
     }
 
-    private fun showLetterDialog(title: String, content: String) {
+    private fun showLetterDialog(title: String, content: String, period: String) {
         Log.d(TAG, "showLetterDialog: Showing letter - $title")
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_weekly_letter, null)
 
@@ -291,6 +321,12 @@ class WeeklyLetterActivity : AppCompatActivity() {
             .setView(dialogView)
             .setPositiveButton("閉じる") { _, _ ->
                 Log.d(TAG, "showLetterDialog: Dialog closed")
+            }
+            // ★追加: 再生成ボタン
+            .setNeutralButton("再生成") { _, _ ->
+                // 確認ダイアログを挟んでも良いですが、ここは直接生成処理を呼びます
+                Toast.makeText(this, "手紙を作り直します...", Toast.LENGTH_SHORT).show()
+                generateWeeklyLetter(period)
             }
             .show()
     }
