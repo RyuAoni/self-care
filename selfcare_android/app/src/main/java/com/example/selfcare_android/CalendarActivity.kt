@@ -36,9 +36,30 @@ class CalendarActivity : AppCompatActivity() {
 
     private lateinit var gestureDetector: GestureDetectorCompat
 
+    private val requestPermission =
+        registerForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+        ) { granted ->
+            // granted が false なら通知は絶対に届かない
+        }
+
+    private fun requestNotificationPermission() {
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_calendar)
+        requestNotificationPermission()
+        val scheduler = AlarmScheduler(this)
+        // 毎日指定時刻に通知（例: 19:30）
+        scheduler.setDailyAlarm(19, 0)
 
         setupViews()
         setupCalendar()
