@@ -304,6 +304,16 @@
                     android:layout_height="wrap_content"/>
             </LinearLayout>
 
+            <Button
+                android:id="@+id/btnCheckData"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="保存データを確認 (Debug)"
+                android:textSize="14sp"
+                android:backgroundTint="#607D8B"
+                android:textColor="#FFFFFF"/>
+
         </LinearLayout>
 
     </ScrollView>

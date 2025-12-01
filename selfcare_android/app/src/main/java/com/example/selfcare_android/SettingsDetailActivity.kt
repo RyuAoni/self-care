@@ -2,17 +2,21 @@ package com.example.selfcare_android
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.materialswitch.MaterialSwitch // ★追加
+import com.google.gson.GsonBuilder // ★追加
 import java.util.Calendar
 
 class SettingsDetailActivity : AppCompatActivity() {
@@ -26,6 +30,7 @@ class SettingsDetailActivity : AppCompatActivity() {
     private lateinit var editHobby: EditText
     private lateinit var editFavorite: EditText
     private lateinit var demoModeSwitch: MaterialSwitch // ★追加
+    private lateinit var btnCheckData: Button // ★追加
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +52,8 @@ class SettingsDetailActivity : AppCompatActivity() {
         loadUserData()
 
         setupDemoSwitch() // ★追加
+
+        setupDebugButton() // ★追加
     }
 
     private fun initViews() {
@@ -58,6 +65,41 @@ class SettingsDetailActivity : AppCompatActivity() {
         editHobby = findViewById(R.id.editHobby)
         editFavorite = findViewById(R.id.editFavorite)
         demoModeSwitch = findViewById(R.id.demoModeSwitch) // ★追加
+        btnCheckData = findViewById(R.id.btnCheckData) // ★追加
+    }
+
+    // ★追加: デバッグボタンの処理
+    private fun setupDebugButton() {
+        btnCheckData.setOnClickListener {
+            showJsonDialog()
+        }
+    }
+
+    // ★追加: JSON表示ダイアログ
+    private fun showJsonDialog() {
+        // 1. データをロード
+        val appData = JsonDataManager.load(this)
+
+        // 2. 見やすく整形 (Pretty Print)
+        val gson = GsonBuilder().setPrettyPrinting().create()
+        val jsonString = gson.toJson(appData)
+
+        // 3. ダイアログを表示
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_debug_json, null)
+        val tvJson = dialogView.findViewById<TextView>(R.id.tvJsonContent)
+        val btnClose = dialogView.findViewById<View>(R.id.btnCloseDebug)
+
+        tvJson.text = jsonString
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        btnClose.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
     // ★追加: デモモードの設定
