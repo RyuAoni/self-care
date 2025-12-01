@@ -273,18 +273,32 @@ class CalendarActivity : AppCompatActivity() {
     private fun openDayDetail(day: CalendarDay) {
         val dateString = String.format(Locale.getDefault(), "%04d/%02d/%02d", day.year, day.month + 1, day.day)
 
+        // 今日の日付かどうか判定
+        val today = Calendar.getInstance()
+        val isToday = (day.year == today.get(Calendar.YEAR) &&
+                day.month == today.get(Calendar.MONTH) &&
+                day.day == today.get(Calendar.DAY_OF_MONTH))
+
         // その日の日記データが存在するかチェック
         val targetEntry = diaryList.find { it.date == dateString }
 
         // データが存在し、かつ日記の中身が空でない（＝生成＆保存済み）場合のみ「完了」とみなす
-        val isCompleted = targetEntry != null && targetEntry.diaryContent.isNotEmpty()
+        val hasContent = targetEntry != null && targetEntry.diaryContent.isNotEmpty()
 
-        val intent = if (isCompleted) {
-            // 日記があれば、詳細画面（結果画面）を開く
-            Intent(this, DiaryDetailActivity::class.java)
+        val intent = if (isToday) {
+            // 当日の場合
+            if (hasContent) {
+                // 日記があれば詳細画面
+                Intent(this, DiaryDetailActivity::class.java)
+            } else {
+                // 日記がなければ入力画面
+                Intent(this, DiaryInputActivity::class.java)
+            }
         } else {
-            // 日記がなければ、入力画面を開く
-            Intent(this, DiaryInputActivity::class.java)
+            // 過去の場合
+            // 日記の有無に関わらず詳細画面を開く
+            // (詳細画面側で「日記がありません」などの表示対応が必要)
+            Intent(this, DiaryDetailActivity::class.java)
         }
 
         intent.putExtra("year", day.year)
