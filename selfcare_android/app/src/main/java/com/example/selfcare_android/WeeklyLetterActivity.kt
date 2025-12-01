@@ -38,7 +38,8 @@ class WeeklyLetterActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: WeeklyLetterAdapter
 
-    private val SUPABASE_WEEKLY_LETTER_URL = "https://gvgntdierpbmygmkrtgy.supabase.co/functions/v1/weekly-letter"
+    private val SUPABASE_WEEKLY_LETTER_URL = "https://kfsdzzwulvslmhcxaedo.supabase.co/functions/v1/weekly-letter"
+    private val SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtmc2R6end1bHZzbG1oY3hhZWRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxNzY4NTgsImV4cCI6MjA3Nzc1Mjg1OH0.NohPcIusibOYIQKmYle8YMGTsmB8kYRus4vHaiwioow"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
@@ -202,6 +203,8 @@ class WeeklyLetterActivity : AppCompatActivity() {
 
                 val request = Request.Builder()
                     .url(SUPABASE_WEEKLY_LETTER_URL)
+                    .addHeader("Authorization", "Bearer $SUPABASE_ANON_KEY")
+                    .addHeader("Content-Type", "application/json")
                     .post(requestBody)
                     .build()
 
