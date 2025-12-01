@@ -2,6 +2,7 @@ package com.example.selfcare_android
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -31,69 +32,67 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-
-
-
 class WeeklyLetterActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: WeeklyLetterAdapter
 
-    // ★書き換え必要: SupabaseのURL
     private val SUPABASE_WEEKLY_LETTER_URL = "https://gvgntdierpbmygmkrtgy.supabase.co/functions/v1/weekly-letter"
 
-    // 通信クライアント
     private val client = OkHttpClient.Builder()
-        .connectTimeout(60, TimeUnit.SECONDS) // 生成に時間がかかるため長めに
+        .connectTimeout(60, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .build()
+
+    companion object {
+        private const val TAG = "WeeklyLetterActivity"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_weekly_letter)
+        Log.d(TAG, "onCreate: WeeklyLetterActivity started")
 
-        // 戻るボタン
         findViewById<ImageView>(R.id.backButton).setOnClickListener {
+            Log.d(TAG, "Back button clicked")
             finish()
         }
 
-        // RecyclerViewの設定
         setupRecyclerView()
-
-        // ボトムナビゲーションの設定
         setupBottomNavigation()
     }
 
     private fun setupRecyclerView() {
+        Log.d(TAG, "setupRecyclerView: Starting setup")
         recyclerView = findViewById(R.id.letterRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // 1. データをロード
         val appData = JsonDataManager.load(this)
+        Log.d(TAG, "setupRecyclerView: Loaded data - ${appData.weeklyLetters.size} letters, ${appData.diaries.size} diaries")
+
         val savedLetters = appData.weeklyLetters
         val diaries = appData.diaries
 
-        // 2. 日記データから「週の範囲」リストを生成 (データがある週だけ)
-        // もし日記が1件もなければ、今週分だけ表示する
         val weeks = if (diaries.isNotEmpty()) {
             getWeeksFromDiaries(diaries)
         } else {
-            getWeeksFromDiaries(emptyList()) // 空の場合は今週を表示
+            getWeeksFromDiaries(emptyList())
         }
+        Log.d(TAG, "setupRecyclerView: Generated ${weeks.size} weeks: $weeks")
 
-        // 3. 表示用データに変換
         val displayList = weeks.map { weekRange ->
             val found = savedLetters.find { it.period == weekRange }
             if (found != null) {
-                // 生成済み
+                Log.d(TAG, "setupRecyclerView: Found existing letter for $weekRange")
                 WeeklyLetterDisplayItem(weekRange, found.title, found.content, true)
             } else {
-                // 未生成（日記はあるが手紙はまだ）
+                Log.d(TAG, "setupRecyclerView: No letter found for $weekRange")
                 WeeklyLetterDisplayItem(weekRange, "${weekRange}の\n週次お手紙", "タップして手紙を作成する", false)
             }
         }
 
         adapter = WeeklyLetterAdapter(displayList) { item ->
+            Log.d(TAG, "Item clicked: ${item.period}, isGenerated: ${item.isGenerated}")
             if (item.isGenerated) {
                 showLetterDialog(item.title, item.content)
             } else {
@@ -101,150 +100,142 @@ class WeeklyLetterActivity : AppCompatActivity() {
             }
         }
         recyclerView.adapter = adapter
+        Log.d(TAG, "setupRecyclerView: RecyclerView setup complete with ${displayList.size} items")
     }
 
-    // ★修正: 日記データに含まれる日付から「週の範囲」のリストを作成する関数
     private fun getWeeksFromDiaries(diaries: List<DiaryEntry>): List<String> {
+        Log.d(TAG, "getWeeksFromDiaries: Processing ${diaries.size} diaries")
         val sdf = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault())
         val periodFormat = SimpleDateFormat("MM/dd", Locale.getDefault())
         val calendar = Calendar.getInstance()
         calendar.firstDayOfWeek = Calendar.SUNDAY
 
-        // 日記の日付をパースしてSetに格納（重複排除）
         val uniqueWeeks = mutableSetOf<String>()
 
-        // 日記がない場合でも「今週」は表示したいので、今日の日付を追加しておく
         val datesToCheck = diaries.mapNotNull {
-            try { sdf.parse(it.date) } catch (e: Exception) { null }
+            try {
+                val date = sdf.parse(it.date)
+                Log.d(TAG, "getWeeksFromDiaries: Parsed date ${it.date} -> $date")
+                date
+            } catch (e: Exception) {
+                Log.e(TAG, "getWeeksFromDiaries: Failed to parse date ${it.date}", e)
+                null
+            }
         }.toMutableList()
 
         if (datesToCheck.isEmpty()) {
-            datesToCheck.add(Date()) // 今日の日付
+            Log.d(TAG, "getWeeksFromDiaries: No valid dates, adding today")
+            datesToCheck.add(Date())
         }
 
-        // 日付ごとに「その週の範囲」を計算
         for (date in datesToCheck) {
             calendar.time = date
-
-            // 週の開始日（日曜日）へ
             calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
             val startStr = periodFormat.format(calendar.time)
 
-            // 週の終了日（土曜日）へ
             calendar.add(Calendar.DAY_OF_MONTH, 6)
             val endStr = periodFormat.format(calendar.time)
 
-            uniqueWeeks.add("$startStr~$endStr")
+            val weekRange = "$startStr~$endStr"
+            uniqueWeeks.add(weekRange)
+            Log.d(TAG, "getWeeksFromDiaries: Added week range: $weekRange")
         }
 
-        // 新しい順（降順）に並べ替えてリスト化
-        return uniqueWeeks.sortedDescending()
+        val result = uniqueWeeks.sortedDescending()
+        Log.d(TAG, "getWeeksFromDiaries: Returning ${result.size} unique weeks")
+        return result
     }
 
-//    // 直近n週間分の期間文字列リストを生成 (例: "11/03~11/09")
-//    private fun generatePastWeeks(weeksCount: Int): List<String> {
-//        val list = mutableListOf<String>()
-//        val calendar = Calendar.getInstance()
-//
-//        // 週の始まりを日曜日に設定
-//        calendar.firstDayOfWeek = Calendar.SUNDAY
-//        // 今日が含まれる週の日曜日へ移動
-//        calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
-//
-//        val sdf = SimpleDateFormat("MM/dd", Locale.getDefault())
-//
-//        for (i in 0 until weeksCount) {
-//            // 週の終わりの土曜日
-//            val endCal = calendar.clone() as Calendar
-//            endCal.add(Calendar.DAY_OF_MONTH, 6)
-//
-//            val startStr = sdf.format(calendar.time)
-//            val endStr = sdf.format(endCal.time)
-//
-//            list.add("$startStr~$endStr")
-//
-//            // 1週間前に戻る
-//            calendar.add(Calendar.WEEK_OF_YEAR, -1)
-//        }
-//        return list
-//    }
-
-    // 生成確認ダイアログ
     private fun showGenerateConfirmDialog(period: String) {
+        Log.d(TAG, "showGenerateConfirmDialog: Showing dialog for $period")
         MaterialAlertDialogBuilder(this)
             .setTitle("手紙を受け取りますか？")
             .setMessage("$period の日記をもとに、AIからのお手紙を作成します。")
-            .setNegativeButton("キャンセル", null)
+            .setNegativeButton("キャンセル") { _, _ ->
+                Log.d(TAG, "showGenerateConfirmDialog: User cancelled")
+            }
             .setPositiveButton("作成する") { _, _ ->
+                Log.d(TAG, "showGenerateConfirmDialog: User confirmed, starting generation")
                 generateWeeklyLetter(period)
             }
             .show()
     }
 
-    // AI手紙生成処理
     private fun generateWeeklyLetter(period: String) {
-        // ローディング表示などを入れるとなお良い
+        Log.d(TAG, "generateWeeklyLetter: Starting generation for $period")
         Toast.makeText(this, "お手紙を書いています...少々お待ちください", Toast.LENGTH_LONG).show()
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // 1. 対象期間の日記データを抽出
                 val appData = JsonDataManager.load(this@WeeklyLetterActivity)
                 val targetDiaries = filterDiariesByPeriod(appData.diaries, period)
+                Log.d(TAG, "generateWeeklyLetter: Found ${targetDiaries.size} diaries for $period")
 
                 if (targetDiaries.isEmpty()) {
+                    Log.w(TAG, "generateWeeklyLetter: No diaries found for $period")
                     withContext(Dispatchers.Main) {
                         Toast.makeText(this@WeeklyLetterActivity, "この期間の日記がないため作成できません", Toast.LENGTH_SHORT).show()
                     }
                     return@launch
                 }
 
-                // 2. 送信データの作成
-                // サーバーは { "diaries": [...], "weekRange": "..." } を期待している
                 val diariesPayload = targetDiaries.map {
                     mapOf("date" to it.date, "content" to it.diaryContent)
                 }
 
-                val jsonBody = JSONObject().apply {
-                    put("diaries", Gson().toJsonTree(diariesPayload))
-                    put("weekRange", period)
-                }
+                val payload = mapOf(
+                    "diaries" to diariesPayload,
+                    "weekRange" to period
+                )
+
+                val jsonBody = Gson().toJson(payload)
+                Log.d(TAG, "generateWeeklyLetter: Sending request to $SUPABASE_WEEKLY_LETTER_URL")
+                Log.d(TAG, "generateWeeklyLetter: Payload: $jsonBody")
 
                 val request = Request.Builder()
                     .url(SUPABASE_WEEKLY_LETTER_URL)
-                    .post(jsonBody.toString().toRequestBody("application/json".toMediaType()))
+                    .post(jsonBody.toRequestBody("application/json".toMediaType()))
                     .build()
 
-                // 3. API呼び出し
                 val response = client.newCall(request).execute()
+                Log.d(TAG, "generateWeeklyLetter: Response code: ${response.code}")
 
                 if (response.isSuccessful) {
-                    val json = JSONObject(response.body?.string() ?: "{}")
-                    val letterContent = json.optString("letter", "手紙を受け取れませんでした。")
+                    val responseBody = response.body?.string() ?: "{}"
+                    Log.d(TAG, "generateWeeklyLetter: Response body: $responseBody")
 
-                    // 4. データを保存
+                    val json = JSONObject(responseBody)
+                    val letterContent = json.optString("letter", "手紙を受け取れませんでした。")
+                    Log.d(TAG, "generateWeeklyLetter: Letter content length: ${letterContent.length}")
+
                     val newLetter = WeeklyLetterData(
                         id = UUID.randomUUID().toString(),
                         period = period,
                         title = "${period}の\n週次お手紙",
                         content = letterContent
                     )
+
                     appData.weeklyLetters.add(newLetter)
                     JsonDataManager.save(this@WeeklyLetterActivity, appData)
+                    Log.d(TAG, "generateWeeklyLetter: Letter saved successfully")
 
-                    // 5. 画面更新
                     withContext(Dispatchers.Main) {
-                        setupRecyclerView() // リストを再描画
-                        showLetterDialog(newLetter.title, newLetter.content) // 完成した手紙を表示
+                        setupRecyclerView()
+                        showLetterDialog(newLetter.title, newLetter.content)
+                        Log.d(TAG, "generateWeeklyLetter: UI updated")
                     }
                 } else {
+                    val errorBody = response.body?.string() ?: "No error body"
+                    Log.e(TAG, "generateWeeklyLetter: Request failed with code ${response.code}")
+                    Log.e(TAG, "generateWeeklyLetter: Error body: $errorBody")
+
                     withContext(Dispatchers.Main) {
                         Toast.makeText(this@WeeklyLetterActivity, "作成に失敗しました: ${response.code}", Toast.LENGTH_SHORT).show()
                     }
                 }
 
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "generateWeeklyLetter: Exception occurred", e)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@WeeklyLetterActivity, "エラーが発生しました", Toast.LENGTH_SHORT).show()
                 }
@@ -252,35 +243,45 @@ class WeeklyLetterActivity : AppCompatActivity() {
         }
     }
 
-    // 期間文字列 ("11/03~11/09") に含まれる日記を抽出するヘルパー
     private fun filterDiariesByPeriod(allDiaries: List<DiaryEntry>, period: String): List<DiaryEntry> {
+        Log.d(TAG, "filterDiariesByPeriod: Filtering ${allDiaries.size} diaries for period $period")
         try {
-            // 現在の年を補完してパース (期間文字列には年がないため)
             val currentYear = Calendar.getInstance().get(Calendar.YEAR)
             val parts = period.split("~")
-            if (parts.size != 2) return emptyList()
+            if (parts.size != 2) {
+                Log.e(TAG, "filterDiariesByPeriod: Invalid period format: $period")
+                return emptyList()
+            }
 
             val sdf = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault())
 
-            // 期間の開始日と終了日をDate型に変換
             val startDate = sdf.parse("$currentYear/${parts[0]}")
             val endDate = sdf.parse("$currentYear/${parts[1]}")
 
-            if (startDate == null || endDate == null) return emptyList()
-
-            // 終了日の時刻を23:59:59にするなどの調整が必要だが、簡易的に日付比較
-            // 日記の日付フォーマット "yyyy/MM/dd" をパースして比較
-            return allDiaries.filter { diary ->
-                val diaryDate = sdf.parse(diary.date)
-                diaryDate != null && !diaryDate.before(startDate) && !diaryDate.after(endDate)
+            if (startDate == null || endDate == null) {
+                Log.e(TAG, "filterDiariesByPeriod: Failed to parse dates")
+                return emptyList()
             }
+
+            Log.d(TAG, "filterDiariesByPeriod: Period range: $startDate to $endDate")
+
+            val filtered = allDiaries.filter { diary ->
+                val diaryDate = sdf.parse(diary.date)
+                val inRange = diaryDate != null && !diaryDate.before(startDate) && !diaryDate.after(endDate)
+                Log.d(TAG, "filterDiariesByPeriod: Diary ${diary.date} - in range: $inRange")
+                inRange
+            }
+
+            Log.d(TAG, "filterDiariesByPeriod: Filtered ${filtered.size} diaries")
+            return filtered
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "filterDiariesByPeriod: Exception occurred", e)
             return emptyList()
         }
     }
 
     private fun showLetterDialog(title: String, content: String) {
+        Log.d(TAG, "showLetterDialog: Showing letter - $title")
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_weekly_letter, null)
 
         dialogView.findViewById<TextView>(R.id.letterTitle).text = title
@@ -288,33 +289,23 @@ class WeeklyLetterActivity : AppCompatActivity() {
 
         MaterialAlertDialogBuilder(this)
             .setView(dialogView)
-            .setPositiveButton("閉じる", null)
+            .setPositiveButton("閉じる") { _, _ ->
+                Log.d(TAG, "showLetterDialog: Dialog closed")
+            }
             .show()
     }
 
-//    private fun setupBottomNavigation() {
-//        findViewById<ImageView>(R.id.navStats).setOnClickListener {
-//            // TODO: 統計画面へ遷移
-//        }
-//        findViewById<ImageView>(R.id.navCalendar).setOnClickListener {
-//            // TODO: カレンダー画面へ遷移
-//        }
-//        findViewById<ImageView>(R.id.navProfile).setOnClickListener {
-//            finish()
-//        }
-//    }
-
     private fun setupBottomNavigation() {
+        Log.d(TAG, "setupBottomNavigation: Setting up navigation")
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-        // 初期選択を解除する
         bottomNav.menu.setGroupCheckable(0, true, false)
         for (i in 0 until bottomNav.menu.size()) {
             bottomNav.menu.getItem(i).isChecked = false
         }
         bottomNav.menu.setGroupCheckable(0, true, true)
-//
-//
+
         bottomNav.setOnItemSelectedListener { item ->
+            Log.d(TAG, "setupBottomNavigation: Item selected - ${item.itemId}")
             when (item.itemId) {
                 R.id.nav_stats -> {
                     val intent = Intent(this, EmotionAnalysisActivity::class.java)
@@ -337,7 +328,6 @@ class WeeklyLetterActivity : AppCompatActivity() {
     }
 }
 
-// リスト表示用のデータクラス
 data class WeeklyLetterDisplayItem(
     val period: String,
     val title: String,
@@ -345,35 +335,41 @@ data class WeeklyLetterDisplayItem(
     val isGenerated: Boolean
 )
 
-// アダプター
 class WeeklyLetterAdapter(
     private val letters: List<WeeklyLetterDisplayItem>,
     private val onItemClick: (WeeklyLetterDisplayItem) -> Unit
 ) : RecyclerView.Adapter<WeeklyLetterAdapter.ViewHolder>() {
 
+    companion object {
+        private const val TAG = "WeeklyLetterAdapter"
+    }
+
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val periodText: TextView = view.findViewById(R.id.periodText)
-        val titleText: TextView = view.findViewById(R.id.letterTitle) // レイアウトに合わせてID確認が必要
-        val contentText: TextView = view.findViewById(R.id.letterContentPreview) // レイアウトに合わせてID確認が必要
+        val titleText: TextView = view.findViewById(R.id.letterTitle)
+        val contentText: TextView = view.findViewById(R.id.letterContentPreview)
         val cardView: CardView = view.findViewById(R.id.letterCard)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_weekly_letter, parent, false)
+        Log.d(TAG, "onCreateViewHolder: Created new ViewHolder")
         return ViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val letter = letters[position]
+        Log.d(TAG, "onBindViewHolder: Binding position $position - ${letter.period}, generated: ${letter.isGenerated}")
+
         holder.periodText.text = letter.period
         holder.titleText.text = letter.title
         holder.contentText.text = letter.content
         holder.cardView.setOnClickListener {
+            Log.d(TAG, "onBindViewHolder: Card clicked at position $position")
             onItemClick(letter)
         }
 
-        // 生成済みかどうかで見た目を変える（例：未生成なら薄くする等）
         if (!letter.isGenerated) {
             holder.cardView.alpha = 0.6f
         } else {
@@ -381,5 +377,8 @@ class WeeklyLetterAdapter(
         }
     }
 
-    override fun getItemCount() = letters.size
+    override fun getItemCount(): Int {
+        Log.d(TAG, "getItemCount: ${letters.size} items")
+        return letters.size
+    }
 }
