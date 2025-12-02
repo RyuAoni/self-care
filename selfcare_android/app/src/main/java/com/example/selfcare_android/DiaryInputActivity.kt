@@ -96,7 +96,7 @@ class DiaryInputActivity : AppCompatActivity() {
 
         // UIコンポーネントの取得
         val recyclerView: RecyclerView = findViewById(R.id.chat_history_view)
-        val inputField: EditText = findViewById(R.id.message_input_field)
+        inputField = findViewById(R.id.message_input_field)
         val sendButton: ImageButton = findViewById(R.id.image_button_send)
         val voiceInputButton: ImageButton = findViewById(R.id.voiceInputButton) // マイクボタン
         val saveButton: Button = findViewById(R.id.saveButton)
