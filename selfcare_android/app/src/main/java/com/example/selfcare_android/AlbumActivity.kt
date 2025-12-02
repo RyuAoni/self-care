@@ -3,6 +3,7 @@ package com.example.selfcare_android
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -66,6 +67,11 @@ class AlbumActivity : AppCompatActivity() {
 //        }
 //    }
 
+    override fun onResume() {
+        super.onResume()
+        loadPhotos()
+    }
+
     private fun setupRecyclerView() {
 //        recyclerView = findViewById(R.id.photoRecyclerView)
         recyclerView.layoutManager = GridLayoutManager(this, 2)
@@ -101,17 +107,19 @@ class AlbumActivity : AppCompatActivity() {
         val appData = JsonDataManager.load(this)
 
         // 2. 画像パスを持っていて、かつ実際にファイルが存在する日記だけを抽出
-        val photoEntries = appData.diaries.filter { diary ->
-            !diary.imagePath.isNullOrEmpty() && File(diary.imagePath).exists()
+        val photoEntries = appData.diaries.filter {
+            !it.imagePath.isNullOrEmpty()
         }.sortedByDescending { it.date } // 新しい順
+
+        Log.d("AlbumActivity", "Found ${photoEntries.size} photos")
 
         // 3. 表示更新
         if (photoEntries.isEmpty()) {
-            if (::emptyText.isInitialized) emptyText.visibility = View.VISIBLE
             recyclerView.visibility = View.GONE
+            emptyText.visibility = View.VISIBLE
         } else {
-            if (::emptyText.isInitialized) emptyText.visibility = View.GONE
             recyclerView.visibility = View.VISIBLE
+            emptyText.visibility = View.GONE
             adapter.updateList(photoEntries)
         }
     }
@@ -260,7 +268,8 @@ class AlbumAdapter(
         // item_photo.xml のIDに合わせて取得
         val imageView: ImageView = view.findViewById(R.id.photoImage) // または ivPhoto
         val dateText: TextView = view.findViewById(R.id.photoDate)   // または tvDate
-        val cardView: CardView = view.findViewById(R.id.photoCard)
+//        val cardView: CardView = view.findViewById(R.id.photoCard)
+        val deleteButton: ImageView = view.findViewById(R.id.deleteButton)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -275,14 +284,27 @@ class AlbumAdapter(
         // 日付
         holder.dateText.text = entry.date
 
-        // 画像
+        // ★修正: ファイルが存在するか確認し、なければデフォルト画像を表示
         if (entry.imagePath != null) {
-            holder.imageView.setImageURI(Uri.fromFile(File(entry.imagePath)))
+            val file = File(entry.imagePath)
+            if (file.exists()) {
+                holder.imageView.setImageURI(Uri.fromFile(file))
+            } else {
+                // ファイルが見つからない場合はデフォルト画像
+                holder.imageView.setImageResource(android.R.drawable.ic_menu_gallery)
+            }
+        } else {
+            holder.imageView.setImageResource(android.R.drawable.ic_menu_gallery)
         }
 
         // クリック時
         holder.itemView.setOnClickListener {
             onItemClick(entry)
+        }
+
+        // 削除ボタンの処理（必要であれば実装）
+        holder.deleteButton.setOnClickListener {
+            // ここで削除処理を呼ぶことも可能です
         }
     }
 
