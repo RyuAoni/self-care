@@ -1,14 +1,21 @@
 package com.example.selfcare_android
 
+import android.Manifest
+import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.speech.RecognizerIntent
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -35,6 +42,9 @@ class DiaryInputActivity : AppCompatActivity() {
     private var month: Int = 0
     private var day: Int = 0
 
+    // UI部品
+    private lateinit var inputField: EditText
+
     // ★追加: Supabaseのチャット関数のURL
     // 必ず自分のSupabaseのURLに書き換えてください！
     private val SUPABASE_CHAT_URL = "https://gvgntdierpbmygmkrtgy.supabase.co/functions/v1/chat"
@@ -45,6 +55,35 @@ class DiaryInputActivity : AppCompatActivity() {
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
+
+    // 音声入力の結果を受け取るランチャー
+    private val voiceInputLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+            val resultData = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            val spokenText = resultData?.get(0)
+
+            if (!spokenText.isNullOrEmpty()) {
+                // 既存の入力があればスペースを空けて追記、なければそのままセット
+                val currentText = inputField.text.toString()
+                if (currentText.isNotEmpty()) {
+                    inputField.setText("$currentText $spokenText")
+                } else {
+                    inputField.setText(spokenText)
+                }
+                // カーソルを末尾に移動
+                inputField.setSelection(inputField.text.length)
+            }
+        }
+    }
+
+    // マイク権限リクエスト用
+    private val requestMicrophonePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            startVoiceInput()
+        } else {
+            Toast.makeText(this, "音声入力にはマイク権限が必要です", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +98,7 @@ class DiaryInputActivity : AppCompatActivity() {
         val recyclerView: RecyclerView = findViewById(R.id.chat_history_view)
         val inputField: EditText = findViewById(R.id.message_input_field)
         val sendButton: ImageButton = findViewById(R.id.image_button_send)
+        val voiceInputButton: ImageButton = findViewById(R.id.voiceInputButton) // マイクボタン
         val saveButton: Button = findViewById(R.id.saveButton)
         val closeButton: ImageButton = findViewById(R.id.closeButton)
         val dateTitleText: TextView = findViewById(R.id.dateTitleText)
@@ -116,8 +156,34 @@ class DiaryInputActivity : AppCompatActivity() {
             }
         }
 
+        // ★追加: 音声入力ボタンの処理
+        voiceInputButton.setOnClickListener {
+            checkPermissionAndStartVoiceInput()
+        }
+
         // ボトムナビゲーション設定
         setupBottomNavigation()
+    }
+
+    private fun checkPermissionAndStartVoiceInput() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            startVoiceInput()
+        } else {
+            requestMicrophonePermission.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
+    private fun startVoiceInput() {
+        try {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                putExtra(RecognizerIntent.EXTRA_PROMPT, "お話しください")
+            }
+            voiceInputLauncher.launch(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "このデバイスでは音声入力がサポートされていません", Toast.LENGTH_SHORT).show()
+        }
     }
 
     // AIの応答を処理するメソッド (API実装の置き換え場所)
