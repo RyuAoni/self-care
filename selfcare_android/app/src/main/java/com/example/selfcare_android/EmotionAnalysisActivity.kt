@@ -288,7 +288,16 @@ class EmotionAnalysisActivity : AppCompatActivity() {
 //            valueTextSize = 12f
 //        }
         val dataSet = BarDataSet(entries, "歩数").apply {
-            colors = ColorTemplate.MATERIAL_COLORS.toList()
+            // 7色の色リストを定義（日曜日から土曜日まで）
+            colors = listOf(
+                android.graphics.Color.rgb(255, 99, 132),   // 赤（日曜日）
+                android.graphics.Color.rgb(255, 159, 64),   // オレンジ（月曜日）
+                android.graphics.Color.rgb(255, 205, 86),   // 黄色（火曜日）
+                android.graphics.Color.rgb(75, 192, 192),   // 緑（水曜日）
+                android.graphics.Color.rgb(54, 162, 235),   // 青（木曜日）
+                android.graphics.Color.rgb(153, 102, 255),  // 紫（金曜日）
+                android.graphics.Color.rgb(201, 203, 207)   // グレー（土曜日）
+            )
             valueTextSize = 10f
         }
 

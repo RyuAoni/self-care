@@ -236,8 +236,8 @@ class CalendarActivity : AppCompatActivity() {
     private fun setupCalendar() {
         calendarRecyclerView.layoutManager = GridLayoutManager(this, 7)
         calendarAdapter = CalendarAdapter(days, diaryList) { day ->
-            // 当月かつ今日以前の日付のみクリック可能
-            if (day.isCurrentMonth && !isFutureDate(day)) {
+            // 今日以前の日付のみクリック可能
+            if (!isFutureDate(day)) {
                 openDayDetail(day)
             }
         }
@@ -452,15 +452,14 @@ class CalendarAdapter(
         val day = days[position]
 
         holder.dayText.text = day.day.toString()
+        holder.dayContainer.setOnClickListener {
+            onDayClick(day)
+        }
 
         if (day.isCurrentMonth) {
             holder.dayText.alpha = 1.0f
-            holder.dayContainer.setOnClickListener {
-                onDayClick(day)
-            }
         } else {
             holder.dayText.alpha = 0.3f
-            holder.dayContainer.setOnClickListener(null)
         }
 
         // 今日の日付をハイライト
@@ -482,7 +481,7 @@ class CalendarAdapter(
         val dateString = String.format(Locale.getDefault(), "%04d/%02d/%02d", day.year, day.month + 1, day.day)
         val diaryEntry = diaries.find { it.date == dateString }
 
-        if (day.isCurrentMonth && diaryEntry != null && diaryEntry.diaryContent?.isNotEmpty() == true) {
+        if (diaryEntry != null && diaryEntry.diaryContent?.isNotEmpty() == true) {
             holder.emotionIcon.visibility = View.VISIBLE
 
             // 感情スコアに基づいてアイコンを変更

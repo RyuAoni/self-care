@@ -39,7 +39,7 @@ class AlbumActivity : AppCompatActivity() {
 
         // 戻るボタン (IDが buttonClose の場合と backButton の場合があるため、レイアウトに合わせて調整してください)
         // ここでは activity_album.xml に backButton があると仮定します
-        val backBtn = findViewById<ImageView>(R.id.backButton) ?: findViewById<ImageView>(R.id.buttonClose)
+        val backBtn = findViewById<ImageView>(R.id.buttonClose)
         backBtn?.setOnClickListener {
             finish()
         }
