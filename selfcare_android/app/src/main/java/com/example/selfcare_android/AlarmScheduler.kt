@@ -62,5 +62,19 @@ class AlarmScheduler(private val context: Context) {
             context.startActivity(intent)
         }
     }
+
+    fun cancelDailyAlarm() {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+        val intent = Intent(context, NotificationReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            1001,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        alarmManager.cancel(pendingIntent)
+    }
 }
 
