@@ -15,8 +15,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.materialswitch.MaterialSwitch // ★追加
-import com.google.gson.GsonBuilder // ★追加
+import com.google.android.material.materialswitch.MaterialSwitch
+import com.google.gson.GsonBuilder
 import java.util.Calendar
 
 class SettingsDetailActivity : AppCompatActivity() {
@@ -29,8 +29,9 @@ class SettingsDetailActivity : AppCompatActivity() {
     private lateinit var editOccupation: EditText
     private lateinit var editHobby: EditText
     private lateinit var editFavorite: EditText
-    private lateinit var demoModeSwitch: MaterialSwitch // ★追加
-    private lateinit var btnCheckData: Button // ★追加
+    private lateinit var demoModeSwitch: MaterialSwitch
+    private lateinit var btnCheckData: Button
+    private lateinit var bottomNavigation: BottomNavigationView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,9 +52,31 @@ class SettingsDetailActivity : AppCompatActivity() {
         // 保存されているデータを読み込み
         loadUserData()
 
-        setupDemoSwitch() // ★追加
+        setupDemoSwitch()
 
-        setupDebugButton() // ★追加
+        setupDebugButton()
+
+        setupKeyboardListener()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 画面に戻ってきたときにボトムナビゲーションを表示
+        if (::bottomNavigation.isInitialized) {
+            bottomNavigation.visibility = View.VISIBLE
+        }
+    }
+
+    private fun setupKeyboardListener() {
+        val rootView = findViewById<View>(android.R.id.content)
+        rootView.viewTreeObserver.addOnGlobalLayoutListener {
+            val heightDiff = rootView.rootView.height - rootView.height
+            if (heightDiff > 250) {
+                bottomNavigation.visibility = View.GONE
+            } else {
+                bottomNavigation.visibility = View.VISIBLE
+            }
+        }
     }
 
     private fun initViews() {
@@ -64,18 +87,17 @@ class SettingsDetailActivity : AppCompatActivity() {
         editOccupation = findViewById(R.id.editOccupation)
         editHobby = findViewById(R.id.editHobby)
         editFavorite = findViewById(R.id.editFavorite)
-        demoModeSwitch = findViewById(R.id.demoModeSwitch) // ★追加
-        btnCheckData = findViewById(R.id.btnCheckData) // ★追加
+        demoModeSwitch = findViewById(R.id.demoModeSwitch)
+        btnCheckData = findViewById(R.id.btnCheckData)
+        bottomNavigation = findViewById(R.id.bottom_navigation)
     }
 
-    // ★追加: デバッグボタンの処理
     private fun setupDebugButton() {
         btnCheckData.setOnClickListener {
             showJsonDialog()
         }
     }
 
-    // ★追加: JSON表示ダイアログ
     private fun showJsonDialog() {
         // 1. データをロード
         val appData = JsonDataManager.load(this)
@@ -102,7 +124,6 @@ class SettingsDetailActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    // ★追加: デモモードの設定
     private fun setupDemoSwitch() {
         // プロフィールとは別の "AppConfig" に保存する
         val prefs = getSharedPreferences("AppConfig", MODE_PRIVATE)
@@ -214,16 +235,14 @@ class SettingsDetailActivity : AppCompatActivity() {
     }
 
     private fun setupBottomNavigation() {
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
         // 初期選択を解除する
-        bottomNav.menu.setGroupCheckable(0, true, false)
-        for (i in 0 until bottomNav.menu.size()) {
-            bottomNav.menu.getItem(i).isChecked = false
+        bottomNavigation.menu.setGroupCheckable(0, true, false)
+        for (i in 0 until bottomNavigation.menu.size()) {
+            bottomNavigation.menu.getItem(i).isChecked = false
         }
-        bottomNav.menu.setGroupCheckable(0, true, true)
+        bottomNavigation.menu.setGroupCheckable(0, true, true)
 
-
-        bottomNav.setOnItemSelectedListener { item ->
+        bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_stats -> {
                     val intent = Intent(this, EmotionAnalysisActivity::class.java)

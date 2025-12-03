@@ -25,7 +25,7 @@
         <!-- 各Activityに個別設定 -->
         <activity
             android:name=".SettingsDetailActivity"
-            android:windowSoftInputMode="adjustPan"/>
+            android:windowSoftInputMode="adjustResize"/>
         <activity
             android:name=".AlbumActivity"
             android:windowSoftInputMode="adjustPan"/>
@@ -44,7 +44,10 @@
         <activity
             android:name=".EmotionAnalysisActivity"
             android:windowSoftInputMode="adjustPan"/>
-
+        <activity
+            android:name=".DiaryInputActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
         <activity
             android:name=".CalendarActivity"
             android:exported="true"
@@ -54,12 +57,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity
-            android:name=".DiaryInputActivity"
-            android:exported="false"
-            android:label="日記入力"
-            android:windowSoftInputMode="adjustPan" />
     </application>
 
 </manifest>
