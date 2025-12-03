@@ -282,6 +282,101 @@
                 android:layout_height="1dp"
                 android:background="#E0E0E0"/>
 
+            <!-- 日記通知スイッチ -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="16dp"
+                android:layout_marginTop="24dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="日記通知"
+                    android:textSize="16sp"
+                    android:textColor="#333333"/>
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/pushInfoSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <!-- 通知時刻設定 (通知ONのときのみ表示) -->
+            <LinearLayout
+                android:id="@+id/notificationTimeLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="通知時刻"
+                    android:textSize="14sp"
+                    android:textColor="#666666"
+                    android:layout_marginBottom="8dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <!-- 時 -->
+                    <Spinner
+                        android:id="@+id/spinnerNotificationHour"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:background="@android:drawable/btn_dropdown"
+                        android:spinnerMode="dropdown"
+                        android:paddingEnd="32dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="時"
+                        android:textSize="16sp"
+                        android:textColor="#000000"
+                        android:paddingHorizontal="8dp"/>
+
+                    <!-- 分 -->
+                    <Spinner
+                        android:id="@+id/spinnerNotificationMinute"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:background="@android:drawable/btn_dropdown"
+                        android:spinnerMode="dropdown"
+                        android:paddingEnd="32dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="分"
+                        android:textSize="16sp"
+                        android:textColor="#000000"
+                        android:paddingHorizontal="8dp"/>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- 区切り線 -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E0E0E0"/>
+
+            <!-- デモモードスイッチ -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

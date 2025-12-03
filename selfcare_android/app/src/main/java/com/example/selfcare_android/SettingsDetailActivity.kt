@@ -9,6 +9,7 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -29,9 +30,15 @@ class SettingsDetailActivity : AppCompatActivity() {
     private lateinit var editOccupation: EditText
     private lateinit var editHobby: EditText
     private lateinit var editFavorite: EditText
+    private lateinit var pushInfoSwitch: MaterialSwitch
     private lateinit var demoModeSwitch: MaterialSwitch
     private lateinit var btnCheckData: Button
     private lateinit var bottomNavigation: BottomNavigationView
+
+    // 通知時刻設定用
+    private lateinit var notificationTimeLayout: LinearLayout
+    private lateinit var spinnerNotificationHour: Spinner
+    private lateinit var spinnerNotificationMinute: Spinner
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,11 +53,16 @@ class SettingsDetailActivity : AppCompatActivity() {
         // Spinnerの設定
         setupSpinners()
 
+        // 通知時刻Spinnerの設定
+        setupNotificationTimeSpinners()
+
         // ボトムナビゲーション設定
         setupBottomNavigation()
 
         // 保存されているデータを読み込み
         loadUserData()
+
+        setupPushInfoSwitch()
 
         setupDemoSwitch()
 
@@ -87,9 +99,15 @@ class SettingsDetailActivity : AppCompatActivity() {
         editOccupation = findViewById(R.id.editOccupation)
         editHobby = findViewById(R.id.editHobby)
         editFavorite = findViewById(R.id.editFavorite)
+        pushInfoSwitch = findViewById(R.id.pushInfoSwitch)
         demoModeSwitch = findViewById(R.id.demoModeSwitch)
         btnCheckData = findViewById(R.id.btnCheckData)
         bottomNavigation = findViewById(R.id.bottom_navigation)
+
+        // 通知時刻設定用
+        notificationTimeLayout = findViewById(R.id.notificationTimeLayout)
+        spinnerNotificationHour = findViewById(R.id.spinnerNotificationHour)
+        spinnerNotificationMinute = findViewById(R.id.spinnerNotificationMinute)
     }
 
     private fun setupDebugButton() {
@@ -137,6 +155,77 @@ class SettingsDetailActivity : AppCompatActivity() {
             val status = if (isChecked) "ON" else "OFF"
             Toast.makeText(this, "デモモードを ${status} にしました", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun setupNotificationTimeSpinners() {
+        // 時間 (0-23)
+        val hours = (0..23).map { String.format("%02d", it) }
+        val hourAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, hours)
+        hourAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerNotificationHour.adapter = hourAdapter
+
+        // 分 (0, 15, 30, 45)
+        val minutes = listOf("00", "15", "30", "45")
+        val minuteAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, minutes)
+        minuteAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerNotificationMinute.adapter = minuteAdapter
+
+        // 保存されている時刻を読み込み (デフォルト: 21:00)
+        val prefs = getSharedPreferences("UserProfile", MODE_PRIVATE)
+        val savedHour = prefs.getInt("notification_hour", 19)
+        val savedMinute = prefs.getInt("notification_minute", 0)
+
+        // Spinnerに反映
+        spinnerNotificationHour.setSelection(savedHour)
+        val minuteIndex = minutes.indexOf(String.format("%02d", savedMinute))
+        if (minuteIndex >= 0) {
+            spinnerNotificationMinute.setSelection(minuteIndex)
+        }
+    }
+
+    private fun setupPushInfoSwitch() {
+        // UserProfile に保存する
+        val prefs = getSharedPreferences("UserProfile", MODE_PRIVATE)
+
+        // デフォルト ON(何も保存されていない場合 true)
+        val isEnabled = prefs.getBoolean("push_info", true)
+        pushInfoSwitch.isChecked = isEnabled
+
+        // 通知時刻レイアウトの表示/非表示を設定
+        updateNotificationTimeVisibility(isEnabled)
+
+        // 切り替えイベント
+        pushInfoSwitch.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("push_info", isChecked).apply()
+
+            // 通知時刻レイアウトの表示/非表示を切り替え
+            updateNotificationTimeVisibility(isChecked)
+
+            val scheduler = AlarmScheduler(this)
+
+            if (isChecked) {
+                // 設定されている時刻で通知をセット
+                val hour = spinnerNotificationHour.selectedItem.toString().toInt()
+                val minute = spinnerNotificationMinute.selectedItem.toString().toInt()
+
+                // 時刻も保存
+                prefs.edit().apply {
+                    putInt("notification_hour", hour)
+                    putInt("notification_minute", minute)
+                    apply()
+                }
+
+                scheduler.setDailyAlarm(hour, minute)
+                Toast.makeText(this, "通知を ON に設定しました", Toast.LENGTH_SHORT).show()
+            } else {
+                scheduler.cancelDailyAlarm()
+                Toast.makeText(this, "通知設定を OFF にしました", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun updateNotificationTimeVisibility(isVisible: Boolean) {
+        notificationTimeLayout.visibility = if (isVisible) View.VISIBLE else View.GONE
     }
 
     private fun setupTopBar() {
@@ -349,6 +438,19 @@ class SettingsDetailActivity : AppCompatActivity() {
             putString("occupation", occupation)
             putString("hobby", hobby)
             putString("favorite", favorite)
+
+            // 通知時刻を保存
+            if (pushInfoSwitch.isChecked) {
+                val hour = spinnerNotificationHour.selectedItem.toString().toInt()
+                val minute = spinnerNotificationMinute.selectedItem.toString().toInt()
+                putInt("notification_hour", hour)
+                putInt("notification_minute", minute)
+
+                // 通知をスケジュール
+                val scheduler = AlarmScheduler(this@SettingsDetailActivity)
+                scheduler.setDailyAlarm(hour, minute)
+            }
+
             apply()
         }
 

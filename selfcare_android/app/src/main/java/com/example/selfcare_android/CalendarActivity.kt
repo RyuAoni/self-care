@@ -65,15 +65,25 @@ class CalendarActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_calendar)
+
         requestNotificationPermission()
+
+        // 通知設定を読み込んで適用
+        val prefs = getSharedPreferences("UserProfile", MODE_PRIVATE)
+        val isPushEnabled = prefs.getBoolean("push_info", true)
+
         val scheduler = AlarmScheduler(this)
-        // 毎日指定時刻に通知（例: 19:30）
-        scheduler.setDailyAlarm(19, 0)
 
-        // ★追加: 権限チェックとリクエスト
+        if (isPushEnabled) {
+            // 保存されている時刻を読み込み (デフォルト: 21:00)
+            val hour = prefs.getInt("notification_hour", 19)
+            val minute = prefs.getInt("notification_minute", 0)
+            scheduler.setDailyAlarm(hour, minute)
+        } else {
+            scheduler.cancelDailyAlarm()
+        }
+
         checkAndRequestPermissions()
-
-        // ★追加: センサー初期化
         stepSensorManager = StepSensorManager(this)
 
         setupViews()
@@ -262,7 +272,7 @@ class CalendarActivity : AppCompatActivity() {
     }
 
     private fun updateCalendar() {
-        // 月と年を表示（例: 2025年 1月）
+        // 月と年を表示(例: 2025年 1月)
         val year = calendar.get(Calendar.YEAR)
         val month = calendar.get(Calendar.MONTH) + 1
         monthYearText.text = "${year}年 ${month}月"
@@ -281,7 +291,7 @@ class CalendarActivity : AppCompatActivity() {
         // 月の日数
         val maxDayInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
 
-        // 前月の日付を追加（グレーアウト）
+        // 前月の日付を追加(グレーアウト)
         val prevMonth = Calendar.getInstance()
         prevMonth.set(currentYear, currentMonth, 1)
         prevMonth.add(Calendar.MONTH, -1)
@@ -297,7 +307,7 @@ class CalendarActivity : AppCompatActivity() {
             days.add(CalendarDay(day, true, currentYear, currentMonth))
         }
 
-        // 次月の日付を追加（6週分になるように）
+        // 次月の日付を追加(6週分になるように)
         val remainingDays = 42 - days.size // 6週 × 7日 = 42
         for (day in 1..remainingDays) {
             days.add(CalendarDay(day, false, currentYear, currentMonth + 1))
@@ -311,43 +321,6 @@ class CalendarActivity : AppCompatActivity() {
         }
     }
 
-//    private fun openDayDetail(day: CalendarDay) {
-//        val today = Calendar.getInstance()
-//        val target = Calendar.getInstance().apply {
-//            set(day.year, day.month, day.day, 0, 0, 0)
-//            set(Calendar.MILLISECOND, 0)
-//        }
-//
-//        today.set(Calendar.HOUR_OF_DAY, 0)
-//        today.set(Calendar.MINUTE, 0)
-//        today.set(Calendar.SECOND, 0)
-//        today.set(Calendar.MILLISECOND, 0)
-//
-//        // ★修正: 日記が存在するかチェック
-//        val dateString = String.format(Locale.getDefault(), "%04d/%02d/%02d", day.year, day.month + 1, day.day)
-//        val hasDiary = diaryList.any { it.date == dateString }
-//
-//        val intent = if (target.before(today)) {
-//            // 昨日以前 → DiaryDetailActivity
-//            Intent(this, DiaryDetailActivity::class.java)
-//        } else {
-//            // 日記がない場合
-//            if (target.before(today)) {
-//                // 過去の日付なら、入力画面を開くか詳細画面を開くか検討が必要。
-//                // ここでは「過去の日記も書ける」ように入力画面へ遷移させます（または空の詳細画面）
-//                Intent(this, DiaryInputActivity::class.java)
-//            } else {
-//                // 今日なら入力画面へ
-//                Intent(this, DiaryInputActivity::class.java)
-//            }
-//        }
-//
-//        intent.putExtra("year", day.year)
-//        intent.putExtra("month", day.month)
-//        intent.putExtra("day", day.day)
-//        startActivity(intent)
-//    }
-
     private fun openDayDetail(day: CalendarDay) {
         val dateString = String.format(Locale.getDefault(), "%04d/%02d/%02d", day.year, day.month + 1, day.day)
 
@@ -360,7 +333,7 @@ class CalendarActivity : AppCompatActivity() {
         // その日の日記データが存在するかチェック
         val targetEntry = diaryList.find { it.date == dateString }
 
-        // データが存在し、かつ日記の中身が空でない（＝生成＆保存済み）場合のみ「完了」とみなす
+        // データが存在し、かつ日記の中身が空でない(＝生成＆保存済み)場合のみ「完了」とみなす
         val hasContent = targetEntry != null && targetEntry.diaryContent.isNotEmpty()
 
         val intent = if (isToday) {
@@ -498,39 +471,6 @@ class CalendarAdapter(
         } else {
             holder.emotionIcon.visibility = View.INVISIBLE
         }
-
-//        // 感情アイコンの表示（1日から昨日まで）
-//        val targetDate = Calendar.getInstance().apply {
-//            set(day.year, day.month, day.day, 0, 0, 0)
-//            set(Calendar.MILLISECOND, 0)
-//        }
-//
-//        val todayDate = Calendar.getInstance().apply {
-//            set(Calendar.HOUR_OF_DAY, 0)
-//            set(Calendar.MINUTE, 0)
-//            set(Calendar.SECOND, 0)
-//            set(Calendar.MILLISECOND, 0)
-//        }
-//
-//        // 当月で、1日から昨日まで（今日以前で今日は除く）
-//        if (day.isCurrentMonth &&
-//            day.day >= 1 &&
-//            targetDate.before(todayDate)) {
-//
-//            holder.emotionIcon.visibility = View.VISIBLE
-//
-//            // 日付によって異なるアイコンを表示（テスト用）
-//            val iconRes = when (day.day % 5) {
-//                0 -> R.drawable.emoji_very_happy
-//                1 -> R.drawable.emoji_happy
-//                2 -> R.drawable.emoji_neutral
-//                3 -> R.drawable.emoji_sad
-//                else -> R.drawable.emoji_very_sad
-//            }
-//            holder.emotionIcon.setImageResource(iconRes)
-//        } else {
-//            holder.emotionIcon.visibility = View.INVISIBLE
-//        }
     }
 
     override fun getItemCount() = days.size
@@ -552,7 +492,7 @@ class CalendarItemDecoration : RecyclerView.ItemDecoration() {
         val position = parent.getChildAdapterPosition(view)
         val spanCount = 7
 
-        // 週の最後のアイテム（土曜日）の下にスペースを追加
+        // 週の最後のアイテム(土曜日)の下にスペースを追加
         if ((position + 1) % spanCount == 0 && position < state.itemCount - 1) {
             outRect.bottom = 1
         }
@@ -566,7 +506,7 @@ class CalendarItemDecoration : RecyclerView.ItemDecoration() {
             val child = parent.getChildAt(i)
             val position = parent.getChildAdapterPosition(child)
 
-            // 週の最後（土曜日の下）に横線を描画
+            // 週の最後(土曜日の下)に横線を描画
             if ((position + 1) % spanCount == 0 && position < state.itemCount - spanCount) {
                 val left = parent.paddingLeft.toFloat()
                 val right = (parent.width - parent.paddingRight).toFloat()
