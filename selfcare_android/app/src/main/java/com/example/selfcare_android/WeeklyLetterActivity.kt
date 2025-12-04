@@ -58,10 +58,12 @@ class WeeklyLetterActivity : AppCompatActivity() {
         findViewById<ImageView>(R.id.backButton).setOnClickListener {
             Log.d(TAG, "Back button clicked")
             finish()
+            overridePendingTransition(0, 0)
         }
 
         setupRecyclerView()
         setupBottomNavigation()
+        setCustomStatusBar()
     }
 
     private fun setupRecyclerView() {
@@ -349,16 +351,19 @@ class WeeklyLetterActivity : AppCompatActivity() {
                 R.id.nav_stats -> {
                     val intent = Intent(this, EmotionAnalysisActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 R.id.nav_calendar -> {
                     val intent = Intent(this, CalendarActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 R.id.nav_profile -> {
                     val intent = Intent(this, SettingsActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 else -> false

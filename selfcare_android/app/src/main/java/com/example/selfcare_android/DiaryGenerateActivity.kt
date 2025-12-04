@@ -109,6 +109,7 @@ class DiaryGenerateActivity : AppCompatActivity() {
         initViews()       // UI初期化
         setupListeners()  // ボタン動作設定
         setupDemoFeatures() // ★デモ機能のセットアップ
+        setCustomStatusBar()
 
         // タイトルに日付を表示（例: 11月11日）
         if (targetYear != 0) {
@@ -503,6 +504,7 @@ class DiaryGenerateActivity : AppCompatActivity() {
                     // 戻るスタックをクリアしてカレンダーへ
                     intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     finish() // 現在のアクティビティを終了
                 }
 
@@ -601,16 +603,19 @@ class DiaryGenerateActivity : AppCompatActivity() {
                 R.id.nav_calendar -> {
                     val intent = Intent(this, CalendarActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 R.id.nav_stats -> {
                     val intent = Intent(this, EmotionAnalysisActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 R.id.nav_profile -> {
                     val intent = Intent(this, SettingsActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 else -> false

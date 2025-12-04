@@ -1,6 +1,7 @@
 package com.example.selfcare_android
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.widget.EditText
 import android.widget.ImageView
@@ -30,22 +31,31 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<ImageView>(R.id.profileImage).setOnClickListener {
             showEditProfileImageDialog()
         }
+
+        val window = window
+        val skyBlue = Color.parseColor("#87CEEB")
+
+        // ステータスバーをこの画面だけスカイブルーにする
+        window.statusBarColor = skyBlue
     }
 
     private fun setupMenuButtons() {
         // 週次お手紙ボタン
         findViewById<CardView>(R.id.weeklyLetterButton).setOnClickListener {
             startActivity(Intent(this, WeeklyLetterActivity::class.java))
+            overridePendingTransition(0, 0)
         }
 
         // アルバムボタン
         findViewById<CardView>(R.id.albumButton).setOnClickListener {
             startActivity(Intent(this, AlbumActivity::class.java))
+            overridePendingTransition(0, 0)
         }
 
         // 設定ボタン（現在の画面なので何もしない or 設定詳細へ）
         findViewById<CardView>(R.id.settingsButton).setOnClickListener {
             startActivity(Intent(this, SettingsDetailActivity::class.java))
+            overridePendingTransition(0, 0)
         }
     }
 
@@ -56,11 +66,13 @@ class SettingsActivity : AppCompatActivity() {
                 R.id.nav_stats -> {
                     val intent = Intent(this, EmotionAnalysisActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 R.id.nav_calendar -> {
                     val intent = Intent(this, CalendarActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 R.id.nav_profile -> {
