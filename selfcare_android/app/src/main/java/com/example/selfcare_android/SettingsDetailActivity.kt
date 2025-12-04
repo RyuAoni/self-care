@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
@@ -23,10 +24,10 @@ import java.util.Calendar
 class SettingsDetailActivity : AppCompatActivity() {
 
     // 設定値を保持
-    private lateinit var spinnerGender: Spinner
-    private lateinit var spinnerYear: Spinner
-    private lateinit var spinnerMonth: Spinner
-    private lateinit var spinnerDay: Spinner
+    private lateinit var spinnerGender: AutoCompleteTextView
+    private lateinit var spinnerYear: AutoCompleteTextView
+    private lateinit var spinnerMonth: AutoCompleteTextView
+    private lateinit var spinnerDay: AutoCompleteTextView
     private lateinit var editOccupation: EditText
     private lateinit var editHobby: EditText
     private lateinit var editFavorite: EditText
@@ -37,8 +38,8 @@ class SettingsDetailActivity : AppCompatActivity() {
 
     // 通知時刻設定用
     private lateinit var notificationTimeLayout: LinearLayout
-    private lateinit var spinnerNotificationHour: Spinner
-    private lateinit var spinnerNotificationMinute: Spinner
+    private lateinit var spinnerNotificationHour: AutoCompleteTextView
+    private lateinit var spinnerNotificationMinute: AutoCompleteTextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,6 +70,7 @@ class SettingsDetailActivity : AppCompatActivity() {
         setupDebugButton()
 
         setupKeyboardListener()
+        setCustomStatusBar()
     }
 
     override fun onResume() {
@@ -158,29 +160,33 @@ class SettingsDetailActivity : AppCompatActivity() {
     }
 
     private fun setupNotificationTimeSpinners() {
-        // 時間 (0-23)
+        // 時間 (0〜23)
         val hours = (0..23).map { String.format("%02d", it) }
-        val hourAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, hours)
+        val hourAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, hours)
         hourAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerNotificationHour.adapter = hourAdapter
+        spinnerNotificationHour.setAdapter(hourAdapter)
 
-        // 分 (0, 15, 30, 45)
+        // 分 (00, 15, 30, 45)
         val minutes = listOf("00", "15", "30", "45")
-        val minuteAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, minutes)
+        val minuteAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, minutes)
         minuteAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerNotificationMinute.adapter = minuteAdapter
+        spinnerNotificationMinute.setAdapter(minuteAdapter)
 
         // 保存されている時刻を読み込み (デフォルト: 21:00)
         val prefs = getSharedPreferences("UserProfile", MODE_PRIVATE)
         val savedHour = prefs.getInt("notification_hour", 19)
         val savedMinute = prefs.getInt("notification_minute", 0)
 
-        // Spinnerに反映
-        spinnerNotificationHour.setSelection(savedHour)
-        val minuteIndex = minutes.indexOf(String.format("%02d", savedMinute))
-        if (minuteIndex >= 0) {
-            spinnerNotificationMinute.setSelection(minuteIndex)
-        }
+        // 時（"02" 形式に変換）
+        val hourString = String.format("%02d", savedHour)
+        spinnerNotificationHour.setText(hourString, false)
+
+        // 分（"00", "15", "30", "45" 形式に変換）
+        val minuteString = String.format("%02d", savedMinute)
+
+        // リストにない場合は "00" を入れる
+        val finalMinute = if (minutes.contains(minuteString)) minuteString else "00"
+        spinnerNotificationMinute.setText(finalMinute, false)
     }
 
     private fun setupPushInfoSwitch() {
@@ -205,8 +211,8 @@ class SettingsDetailActivity : AppCompatActivity() {
 
             if (isChecked) {
                 // 設定されている時刻で通知をセット
-                val hour = spinnerNotificationHour.selectedItem.toString().toInt()
-                val minute = spinnerNotificationMinute.selectedItem.toString().toInt()
+                val hour = spinnerNotificationHour.text.toString().toInt()
+                val minute = spinnerNotificationMinute.text.toString().toInt()
 
                 // 時刻も保存
                 prefs.edit().apply {
@@ -232,94 +238,88 @@ class SettingsDetailActivity : AppCompatActivity() {
         // 閉じるボタン
         findViewById<ImageView>(R.id.buttonClose).setOnClickListener {
             finish()
+            overridePendingTransition(0, 0)
         }
 
         // 保存ボタン
         findViewById<TextView>(R.id.buttonSave).setOnClickListener {
             saveUserData()
+            overridePendingTransition(0, 0)
         }
     }
 
     private fun setupSpinners() {
-        // 性別Spinner
+        // 性別 AutoCompleteTextView
         val genderOptions = arrayOf("選択してください", "男性", "女性", "その他", "回答しない")
-        val genderAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, genderOptions)
-        genderAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerGender.adapter = genderAdapter
+        val genderAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, genderOptions)
+        spinnerGender.setAdapter(genderAdapter)
 
-        // 年Spinner(1900年〜現在年)
+        // 年（1900年〜現在）
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-        val years = mutableListOf("—")
+        val years = mutableListOf("-")
         for (year in currentYear downTo 1900) {
             years.add(year.toString())
         }
-        val yearAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, years)
-        yearAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerYear.adapter = yearAdapter
+        val yearAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, years)
+        spinnerYear.setAdapter(yearAdapter)
 
-        // 月Spinner(1〜12月)
-        val months = mutableListOf("—")
+        // 月（1〜12）
+        val months = mutableListOf("-")
         for (month in 1..12) {
             months.add(month.toString())
         }
-        val monthAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, months)
-        monthAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerMonth.adapter = monthAdapter
+        val monthAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, months)
+        spinnerMonth.setAdapter(monthAdapter)
 
-        // 日Spinner(1〜31日)
-        val days = mutableListOf("—")
+        // 日（1〜31）
+        val days = mutableListOf("-")
         for (day in 1..31) {
             days.add(day.toString())
         }
-        val dayAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, days)
-        dayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerDay.adapter = dayAdapter
+        val dayAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, days)
+        spinnerDay.setAdapter(dayAdapter)
 
         // 年・月が変更されたら日の選択肢を調整
-        spinnerYear.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                updateDaySpinner()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        spinnerYear.setOnItemClickListener { _, _, _, _ ->
+            updateDaySpinner()
         }
 
-        spinnerMonth.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                updateDaySpinner()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        spinnerMonth.setOnItemClickListener { _, _, _, _ ->
+            updateDaySpinner()
         }
     }
 
-    private fun updateDaySpinner() {
-        val yearStr = spinnerYear.selectedItem.toString()
-        val monthStr = spinnerMonth.selectedItem.toString()
 
-        if (yearStr == "—" || monthStr == "—") {
+    private fun updateDaySpinner() {
+        val yearStr = spinnerYear.text.toString()
+        val monthStr = spinnerMonth.text.toString()
+
+        // 「-」 の場合は処理しない
+        if (yearStr == "-" || monthStr == "-") {
             return
         }
 
         val year = yearStr.toIntOrNull() ?: return
         val month = monthStr.toIntOrNull() ?: return
 
-        // その月の最終日を計算
+        val previousDay = spinnerDay.text.toString()
+
         val calendar = Calendar.getInstance()
         calendar.set(year, month - 1, 1)
         val maxDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
 
-        val days = mutableListOf("—")
-        for (day in 1..maxDay) {
-            days.add(day.toString())
+        val newDays = mutableListOf("-")
+        for (d in 1..maxDay) {
+            newDays.add(d.toString())
         }
 
-        val currentSelection = spinnerDay.selectedItemPosition
-        val dayAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, days)
-        dayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerDay.adapter = dayAdapter
+        val dayAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, newDays)
+        spinnerDay.setAdapter(dayAdapter)
 
-        // 以前の選択を維持(範囲内であれば)
-        if (currentSelection < days.size) {
-            spinnerDay.setSelection(currentSelection)
+        if (previousDay in newDays) {
+            spinnerDay.setText(previousDay, false)
+        } else {
+            spinnerDay.setText("-", false)
         }
     }
 
@@ -336,16 +336,19 @@ class SettingsDetailActivity : AppCompatActivity() {
                 R.id.nav_stats -> {
                     val intent = Intent(this, EmotionAnalysisActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 R.id.nav_calendar -> {
                     val intent = Intent(this, CalendarActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 R.id.nav_profile -> {
                     val intent = Intent(this, SettingsActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 else -> false
@@ -358,70 +361,54 @@ class SettingsDetailActivity : AppCompatActivity() {
 
         // 性別
         val gender = prefs.getString("gender", "")
-        val genderPosition = when (gender) {
-            "男性" -> 1
-            "女性" -> 2
-            "その他" -> 3
-            "回答しない" -> 4
-            else -> 0
+        if (!gender.isNullOrEmpty()) {
+            spinnerGender.setText(gender, false)
+        } else {
+            spinnerGender.setText("選択してください", false)
         }
-        spinnerGender.setSelection(genderPosition)
 
         // 生年月日
         val birthday = prefs.getString("birthday", "")
-        if (birthday?.isNotEmpty() == true) {
+        if (!birthday.isNullOrEmpty()) {
             val parts = birthday.split("/")
             if (parts.size == 3) {
                 val year = parts[0]
                 val month = parts[1]
                 val day = parts[2]
 
-                // 年の選択
-                val yearAdapter = spinnerYear.adapter
-                for (i in 0 until yearAdapter.count) {
-                    if (yearAdapter.getItem(i).toString() == year) {
-                        spinnerYear.setSelection(i)
-                        break
-                    }
-                }
+                spinnerYear.setText(year, false)
+                spinnerMonth.setText(month.toInt().toString(), false)
 
-                // 月の選択
-                val monthAdapter = spinnerMonth.adapter
-                for (i in 0 until monthAdapter.count) {
-                    if (monthAdapter.getItem(i).toString() == month.toInt().toString()) {
-                        spinnerMonth.setSelection(i)
-                        break
-                    }
-                }
+                // 月に応じて日数を更新
+                updateDaySpinner()
 
-                // 日の選択
-                spinnerDay.postDelayed({
-                    val dayAdapter = spinnerDay.adapter
-                    for (i in 0 until dayAdapter.count) {
-                        if (dayAdapter.getItem(i).toString() == day.toInt().toString()) {
-                            spinnerDay.setSelection(i)
-                            break
-                        }
-                    }
-                }, 100)
+                spinnerDay.post {
+                    spinnerDay.setText(day.toInt().toString(), false)
+                }
             }
+        } else {
+            spinnerYear.setText("-", false)
+            spinnerMonth.setText("-", false)
+            spinnerDay.setText("-", false)
         }
 
-        // その他の項目
         editOccupation.setText(prefs.getString("occupation", ""))
         editHobby.setText(prefs.getString("hobby", ""))
         editFavorite.setText(prefs.getString("favorite", ""))
     }
 
     private fun saveUserData() {
-        // 入力チェック
-        val gender = spinnerGender.selectedItem.toString()
-        val year = spinnerYear.selectedItem.toString()
-        val month = spinnerMonth.selectedItem.toString()
-        val day = spinnerDay.selectedItem.toString()
+        val gender = spinnerGender.text.toString()
+        val year = spinnerYear.text.toString()
+        val month = spinnerMonth.text.toString()
+        val day = spinnerDay.text.toString()
 
-        val birthday = if (year != "—" && month != "—" && day != "—") {
-            String.format("%s/%02d/%02d", year, month.toInt(), day.toInt())
+        val birthday = if (
+            year != "-" &&
+            month != "-" &&
+            day != "-"
+        ) {
+            "%s/%02d/%02d".format(year, month.toInt(), day.toInt())
         } else {
             ""
         }
@@ -430,7 +417,6 @@ class SettingsDetailActivity : AppCompatActivity() {
         val hobby = editHobby.text.toString().trim()
         val favorite = editFavorite.text.toString().trim()
 
-        // 保存
         val prefs = getSharedPreferences("UserProfile", MODE_PRIVATE)
         prefs.edit().apply {
             putString("gender", if (gender == "選択してください") "" else gender)
@@ -439,16 +425,14 @@ class SettingsDetailActivity : AppCompatActivity() {
             putString("hobby", hobby)
             putString("favorite", favorite)
 
-            // 通知時刻を保存
+            // 通知 ON の時は時刻も保存する
             if (pushInfoSwitch.isChecked) {
-                val hour = spinnerNotificationHour.selectedItem.toString().toInt()
-                val minute = spinnerNotificationMinute.selectedItem.toString().toInt()
+                val hour = spinnerNotificationHour.text.toString().toInt()
+                val minute = spinnerNotificationMinute.text.toString().toInt()
                 putInt("notification_hour", hour)
                 putInt("notification_minute", minute)
 
-                // 通知をスケジュール
-                val scheduler = AlarmScheduler(this@SettingsDetailActivity)
-                scheduler.setDailyAlarm(hour, minute)
+                AlarmScheduler(this@SettingsDetailActivity).setDailyAlarm(hour, minute)
             }
 
             apply()

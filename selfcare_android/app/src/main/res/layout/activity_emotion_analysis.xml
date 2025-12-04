@@ -13,7 +13,7 @@
         android:id="@+id/weekHeader"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="#FFFFFF"
+        android:background="?attr/colorSurface"
         android:elevation="4dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
@@ -23,13 +23,25 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <!-- 週選択スピナー -->
-        <Spinner
-            android:id="@+id/weekSpinner"
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:minHeight="40dp"
-            android:spinnerMode="dropdown" />
+            app:endIconMode="dropdown_menu"
+            app:boxStrokeColor="@android:color/transparent"
+            app:boxStrokeWidth="0dp"
+            app:boxBackgroundColor="@android:color/transparent">
+
+            <AutoCompleteTextView
+                android:id="@+id/weekSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:padding="12dp"
+                android:background="@null"/>
+        </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 
     <!-- スクロール可能なメインコンテンツ -->

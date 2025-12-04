@@ -4,16 +4,13 @@ import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.LinearLayout
-import android.widget.Spinner
+import android.widget.AutoCompleteTextView
 import androidx.appcompat.app.AppCompatActivity
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
-import com.github.mikephil.charting.utils.ColorTemplate
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import java.text.SimpleDateFormat
 import java.util.*
@@ -22,14 +19,11 @@ class EmotionAnalysisActivity : AppCompatActivity() {
 
     private lateinit var emotionChart: LineChart
     private lateinit var stepChart: BarChart
-    private lateinit var weekSpinner: Spinner
-//
-//    private var startDate: Calendar = Calendar.getInstance()
-//    private var endDate: Calendar = Calendar.getInstance()
-    private val weekRanges = mutableListOf<Pair<Calendar, Calendar>>()
-    private var currentWeekIndex = 0 // 現在選択されている週のインデックス
+    private lateinit var weekSpinner: AutoCompleteTextView
 
-    // アプリ全体のデータ
+    private val weekRanges = mutableListOf<Pair<Calendar, Calendar>>()
+    private var currentWeekIndex = 0
+
     private lateinit var appData: AppData
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,59 +34,25 @@ class EmotionAnalysisActivity : AppCompatActivity() {
         stepChart = findViewById(R.id.stepChart)
         weekSpinner = findViewById(R.id.weekSpinner)
 
-        // データをロード
         appData = JsonDataManager.load(this)
 
-        // 週の範囲を生成（過去8週間分）
         generateWeekRanges()
         setupWeekSpinner()
-//        setupEmotionChart()
-//        setupStepChart()
+
         setupBottomNavigation()
+        setCustomStatusBar()
     }
 
-    // 画面に戻ってきた時もデータを最新にする
     override fun onResume() {
         super.onResume()
         appData = JsonDataManager.load(this)
         updateCharts()
     }
 
-    private fun setupBottomNavigation() {
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-                bottomNav.menu.setGroupCheckable(0, true, false)
-        for (i in 0 until bottomNav.menu.size()) {
-            bottomNav.menu.getItem(i).isChecked = false
-        }
-        bottomNav.menu.setGroupCheckable(0, true, true)
-
-        bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_stats -> {
-                    true
-                }
-                R.id.nav_calendar -> {
-                    val intent = Intent(this, CalendarActivity::class.java)
-                    startActivity(intent)
-                    true
-                }
-                R.id.nav_profile -> {
-                    val intent = Intent(this, SettingsActivity::class.java)
-                    startActivity(intent)
-                    true
-                }
-                else -> false
-            }
-        }
-        // statsを選択状態にする
-        bottomNav.selectedItemId = R.id.nav_stats
-    }
-
     /** 週の範囲を生成 */
     private fun generateWeekRanges() {
         val today = Calendar.getInstance()
 
-        // 今日を含む週の日曜日を計算
         val currentWeekStart = Calendar.getInstance().apply {
             time = today.time
             set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
@@ -102,7 +62,6 @@ class EmotionAnalysisActivity : AppCompatActivity() {
             set(Calendar.MILLISECOND, 0)
         }
 
-        // 過去8週間分の範囲を生成
         for (i in 0..7) {
             val weekStart = Calendar.getInstance().apply {
                 time = currentWeekStart.time
@@ -117,87 +76,80 @@ class EmotionAnalysisActivity : AppCompatActivity() {
             }
             weekRanges.add(Pair(weekStart, weekEnd))
         }
-
-//        // 最初の週（今週）を初期値に設定
-//        currentWeekIndex = 0
-//        startDate.time = weekRanges[currentWeekIndex].first.time
-//        endDate.time = weekRanges[currentWeekIndex].second.time
     }
 
-    /** 週選択スピナーの設定 */
+    /** プルダウンの設定 */
     private fun setupWeekSpinner() {
         val format = SimpleDateFormat("M月d日", Locale.JAPAN)
         val weekLabels = weekRanges.map { (start, end) ->
-            "${format.format(start.time)}〜${format.format(end.time)}"
+            val startStr = format.format(start.time)
+            val endStr = format.format(end.time)
+
+            // 月と日をそれぞれ2桁に揃える
+            val formattedStart = formatDateWithPadding(start)
+            val formattedEnd = formatDateWithPadding(end)
+
+            "${formattedStart}〜${formattedEnd}"
         }
 
         val adapter = ArrayAdapter(
             this,
-            R.layout.spinner_item,
+            R.layout.spinner_dropdown_item,
             weekLabels
-        ).apply {
-            setDropDownViewResource(R.layout.spinner_dropdown_item)
+        )
+
+        weekSpinner.setAdapter(adapter)
+
+        /** ★ AutoCompleteTextView では onItemClickListener を使用する */
+        weekSpinner.setOnItemClickListener { parent, view, position, id ->
+            currentWeekIndex = position
+            updateCharts()
         }
 
-        weekSpinner.adapter = adapter
-        weekSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                currentWeekIndex = position
-//                val selectedWeek = weekRanges[position]
-//                startDate.time = selectedWeek.first.time
-//                endDate.time = selectedWeek.second.time
-                updateCharts()
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
+        /** 初期値（今週）を表示 */
+        weekSpinner.setText(weekLabels[currentWeekIndex], false)
     }
 
-    /** グラフ更新 */
-    private fun updateCharts() {
-        // 選択された週の範囲を取得
-        val (start, end) = weekRanges[currentWeekIndex]
+    /** 月と日を2桁に揃えてフォーマット */
+    private fun formatDateWithPadding(cal: Calendar): String {
+        val month = cal.get(Calendar.MONTH) + 1
+        val day = cal.get(Calendar.DAY_OF_MONTH)
 
-        // 1週間分の日付リスト（日〜土）を作成
+        val monthStr = if (month < 10) "  ${month}" else "${month}"
+        val dayStr = if (day < 10) "  ${day}" else "${day}"
+
+        return "${monthStr}月${dayStr}日"
+    }
+
+    /** グラフの更新 */
+    private fun updateCharts() {
+        val (start, _) = weekRanges[currentWeekIndex]
         val weekDates = getDatesInWeek(start)
 
-        // 日記データをフィルタリングして、日ごとのデータを抽出
         val emotionEntries = ArrayList<Entry>()
         val stepEntries = ArrayList<BarEntry>()
 
         val sdf = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault())
 
-        // 0(日曜)〜6(土曜) のループ
         for (i in weekDates.indices) {
             val targetDateStr = sdf.format(weekDates[i])
-
-            // その日の日記データを検索
             val diary = appData.diaries.find { it.date == targetDateStr }
 
             if (diary != null) {
-                // 感情スコア (String -> Float)
-                // -1.0〜1.0 の範囲を 0〜5 などのグラフ用数値に変換しても良いが、
-                // ここではとりあえずそのままの値を使用し、Y軸の範囲調整で見やすくする
                 val emotion = diary.emotionScore.toFloatOrNull() ?: 0f
                 emotionEntries.add(Entry(i.toFloat(), emotion))
 
-                // 歩数 (String -> Float)
                 val steps = diary.stepCount.toFloatOrNull() ?: 0f
                 stepEntries.add(BarEntry(i.toFloat(), steps))
             } else {
-                // データがない日は 0 を入れる（またはエントリーを追加しない）
-                // emotionEntries.add(Entry(i.toFloat(), 0f)) // 線をつなげたい場合は0を入れる
                 stepEntries.add(BarEntry(i.toFloat(), 0f))
             }
         }
 
         setupEmotionChart(emotionEntries)
         setupStepChart(stepEntries)
-//        setupEmotionChart()
-//        setupStepChart()
     }
 
-    // 指定した開始日から7日間のDateリストを返す
     private fun getDatesInWeek(startDate: Calendar): List<Date> {
         val dates = mutableListOf<Date>()
         val cal = startDate.clone() as Calendar
@@ -208,27 +160,9 @@ class EmotionAnalysisActivity : AppCompatActivity() {
         return dates
     }
 
-    /** 感情スコアグラフ */
+    /** 感情スコアの折れ線グラフ */
     private fun setupEmotionChart(entries: List<Entry>) {
-//        // TODO: 実際のデータベースからデータを取得
-//        val entries = listOf(
-//            Entry(0f, 3f),
-//            Entry(1f, 1f),
-//            Entry(2f, 2f),
-//            Entry(3f, 2f),
-//            Entry(4f, 5f),
-//            Entry(5f, 4f),
-//            Entry(6f, 3f)
-//        )
-
-//        val dataSet = LineDataSet(entries, "感情スコア").apply {
-//            color = resources.getColor(android.R.color.black, null)
-//            setCircleColor(resources.getColor(android.R.color.black, null))
-//            lineWidth = 2f
-//            circleRadius = 5f
-//            setDrawValues(false)
-//        }
-        val dataSet = LineDataSet(entries, "感情スコア (-1.0:悲 〜 1.0:喜)").apply {
+        val dataSet = LineDataSet(entries, "感情スコア (-1.0〜1.0)").apply {
             color = resources.getColor(android.R.color.black, null)
             setCircleColor(resources.getColor(android.R.color.black, null))
             lineWidth = 2f
@@ -237,94 +171,90 @@ class EmotionAnalysisActivity : AppCompatActivity() {
             valueTextSize = 10f
         }
 
-        val data = LineData(dataSet)
-        emotionChart.data = data
+        emotionChart.data = LineData(dataSet)
         emotionChart.description.isEnabled = false
-//        emotionChart.xAxis.apply {
-//            position = XAxis.XAxisPosition.BOTTOM
-//            granularity = 1f
-//            setDrawGridLines(true)
-//            valueFormatter = IndexAxisValueFormatter(listOf("日", "月", "火", "水", "木", "金", "土"))
-//        }
-        // X軸の設定
+
         emotionChart.xAxis.apply {
             position = XAxis.XAxisPosition.BOTTOM
             granularity = 1f
-            setDrawGridLines(true)
             valueFormatter = IndexAxisValueFormatter(listOf("日", "月", "火", "水", "木", "金", "土"))
-            axisMinimum = -0.5f // 端の余白
+            axisMinimum = -0.5f
             axisMaximum = 6.5f
         }
+
         emotionChart.axisRight.isEnabled = false
-//        emotionChart.axisLeft.apply {
-//            setDrawGridLines(true)
-//            axisMinimum = 0f
-//            axisMaximum = 5f
-//        }
+
         emotionChart.axisLeft.apply {
             setDrawGridLines(true)
             axisMinimum = -1.2f
             axisMaximum = 1.2f
             granularity = 0.5f
         }
+
         emotionChart.invalidate()
     }
 
-    /** 歩数グラフ */
+    /** 歩数の棒グラフ */
     private fun setupStepChart(entries: List<BarEntry>) {
-//        // TODO: 実際のデータベースからデータを取得
-//        val entries = listOf(
-//            BarEntry(0f, 1600f),
-//            BarEntry(1f, 4500f),
-//            BarEntry(2f, 2700f),
-//            BarEntry(3f, 3500f),
-//            BarEntry(4f, 1500f),
-//            BarEntry(5f, 3600f),
-//            BarEntry(6f, 4200f)
-//        )
-
-//        val dataSet = BarDataSet(entries, "歩数").apply {
-//            colors = ColorTemplate.MATERIAL_COLORS.toList()
-//            valueTextSize = 12f
-//        }
         val dataSet = BarDataSet(entries, "歩数").apply {
-            // 7色の色リストを定義（日曜日から土曜日まで）
             colors = listOf(
-                android.graphics.Color.rgb(255, 99, 132),   // 赤（日曜日）
-                android.graphics.Color.rgb(255, 159, 64),   // オレンジ（月曜日）
-                android.graphics.Color.rgb(255, 205, 86),   // 黄色（火曜日）
-                android.graphics.Color.rgb(75, 192, 192),   // 緑（水曜日）
-                android.graphics.Color.rgb(54, 162, 235),   // 青（木曜日）
-                android.graphics.Color.rgb(153, 102, 255),  // 紫（金曜日）
-                android.graphics.Color.rgb(201, 203, 207)   // グレー（土曜日）
+                android.graphics.Color.rgb(255, 99, 132),
+                android.graphics.Color.rgb(255, 159, 64),
+                android.graphics.Color.rgb(255, 205, 86),
+                android.graphics.Color.rgb(75, 192, 192),
+                android.graphics.Color.rgb(54, 162, 235),
+                android.graphics.Color.rgb(153, 102, 255),
+                android.graphics.Color.rgb(201, 203, 207)
             )
             valueTextSize = 10f
         }
 
-        val data = BarData(dataSet)
-        data.barWidth = 0.6f
-        stepChart.data = data
+        stepChart.data = BarData(dataSet).apply { barWidth = 0.6f }
         stepChart.description.isEnabled = false
-//        stepChart.xAxis.apply {
-//            position = XAxis.XAxisPosition.BOTTOM
-//            granularity = 1f
-//            setDrawGridLines(true)
-//            valueFormatter = IndexAxisValueFormatter(listOf("日", "月", "火", "水", "木", "金", "土"))
-//        }
+
         stepChart.xAxis.apply {
             position = XAxis.XAxisPosition.BOTTOM
             granularity = 1f
-            setDrawGridLines(false)
             valueFormatter = IndexAxisValueFormatter(listOf("日", "月", "火", "水", "木", "金", "土"))
             axisMinimum = -0.5f
             axisMaximum = 6.5f
         }
+
         stepChart.axisRight.isEnabled = false
-//        stepChart.axisLeft.setDrawGridLines(true)
+
         stepChart.axisLeft.apply {
             setDrawGridLines(true)
-            axisMinimum = 0f // 歩数は0から
+            axisMinimum = 0f
         }
+
         stepChart.invalidate()
+    }
+
+    /** BottomNavigation */
+    private fun setupBottomNavigation() {
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+        bottomNav.menu.setGroupCheckable(0, true, false)
+        for (i in 0 until bottomNav.menu.size()) {
+            bottomNav.menu.getItem(i).isChecked = false
+        }
+        bottomNav.menu.setGroupCheckable(0, true, true)
+
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_stats -> true
+                R.id.nav_calendar -> {
+                    startActivity(Intent(this, CalendarActivity::class.java))
+                    overridePendingTransition(0, 0)
+                    true
+                }
+                R.id.nav_profile -> {
+                    startActivity(Intent(this, SettingsActivity::class.java))
+                    overridePendingTransition(0, 0)
+                    true
+                }
+                else -> false
+            }
+        }
+        bottomNav.selectedItemId = R.id.nav_stats
     }
 }

@@ -59,6 +59,7 @@ class DiaryDetailActivity : AppCompatActivity() {
         setupBottomNavigation()
         loadDiaryData(year, month, day)
         setupDemoFeatures()
+        setCustomStatusBar()
     }
 
     private fun setupViews() {
@@ -253,17 +254,20 @@ class DiaryDetailActivity : AppCompatActivity() {
                 R.id.nav_stats -> {
                     val intent = Intent(this, EmotionAnalysisActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 R.id.nav_calendar -> {
                     val intent = Intent(this, CalendarActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 R.id.nav_profile -> {
                     val intent = Intent(this, SettingsActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 else -> false

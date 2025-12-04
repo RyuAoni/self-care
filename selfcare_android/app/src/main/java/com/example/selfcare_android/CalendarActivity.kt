@@ -1,7 +1,6 @@
 package com.example.selfcare_android
 
 import android.Manifest
-import android.app.DatePickerDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -11,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
@@ -26,21 +26,24 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import android.widget.AutoCompleteTextView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
 class CalendarActivity : AppCompatActivity() {
 
-    private lateinit var monthYearText: TextView
+    private lateinit var monthYearText: AutoCompleteTextView
     private lateinit var calendarRecyclerView: RecyclerView
     private lateinit var calendarAdapter: CalendarAdapter
     private val calendar = Calendar.getInstance()
     private val days = mutableListOf<CalendarDay>()
 
-    // ★追加: 読み込んだ日記データを保持するリスト
     private var diaryList: List<DiaryEntry> = emptyList()
 
     private lateinit var gestureDetector: GestureDetectorCompat
+
+    private val monthYearList = mutableListOf<Pair<Int, Int>>() // (year, month)
+    private var currentMonthIndex = 0
 
     private val requestPermission =
         registerForActivityResult(
@@ -58,7 +61,7 @@ class CalendarActivity : AppCompatActivity() {
             }
         }
     }
-    // ★追加: 歩数センサー管理
+
     private lateinit var stepSensorManager: StepSensorManager
     private val REQUEST_CODE_ACTIVITY_RECOGNITION = 100
 
@@ -68,14 +71,12 @@ class CalendarActivity : AppCompatActivity() {
 
         requestNotificationPermission()
 
-        // 通知設定を読み込んで適用
         val prefs = getSharedPreferences("UserProfile", MODE_PRIVATE)
         val isPushEnabled = prefs.getBoolean("push_info", true)
 
         val scheduler = AlarmScheduler(this)
 
         if (isPushEnabled) {
-            // 保存されている時刻を読み込み (デフォルト: 21:00)
             val hour = prefs.getInt("notification_hour", 19)
             val minute = prefs.getInt("notification_minute", 0)
             scheduler.setDailyAlarm(hour, minute)
@@ -86,29 +87,27 @@ class CalendarActivity : AppCompatActivity() {
         checkAndRequestPermissions()
         stepSensorManager = StepSensorManager(this)
 
+        generateMonthYearList()
         setupViews()
         setupCalendar()
         setupBottomNavigation()
         setupGestureDetector()
         updateCalendar()
+        setCustomStatusBar()
     }
 
-    // ★追加: 画面が表示されるたびにデータを再読み込みする
     override fun onResume() {
         super.onResume()
         loadDiaryData()
         updateCalendar()
-        // ★追加: 計測開始
         stepSensorManager.startListening()
     }
 
     override fun onPause() {
         super.onPause()
-        // ★追加: 計測一時停止
         stepSensorManager.stopListening()
     }
 
-    // ★追加: 権限リクエストのロジック
     private fun checkAndRequestPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             if (ContextCompat.checkSelfPermission(
@@ -125,7 +124,6 @@ class CalendarActivity : AppCompatActivity() {
         }
     }
 
-    // ★追加: 権限リクエスト結果の受け取り
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -134,7 +132,6 @@ class CalendarActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_CODE_ACTIVITY_RECOGNITION) {
             if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
-                // 許可されたら計測開始
                 stepSensorManager.startListening()
             } else {
                 Toast.makeText(this, "歩数を記録するには権限が必要です", Toast.LENGTH_SHORT).show()
@@ -142,14 +139,25 @@ class CalendarActivity : AppCompatActivity() {
         }
     }
 
-    // ★追加: JSONファイルから日記データを読み込む処理
     private fun loadDiaryData() {
         val appData = JsonDataManager.load(this)
         diaryList = appData.diaries
 
-        // アダプターに最新データを渡す
         if (::calendarAdapter.isInitialized) {
             calendarAdapter.updateDiaries(diaryList)
+        }
+    }
+
+    /** 月のリストを生成（今月から過去12ヶ月分） */
+    private fun generateMonthYearList() {
+        val today = Calendar.getInstance()
+
+        for (i in 0..11) {
+            val cal = Calendar.getInstance().apply {
+                time = today.time
+                add(Calendar.MONTH, -i)
+            }
+            monthYearList.add(Pair(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH)))
         }
     }
 
@@ -157,20 +165,69 @@ class CalendarActivity : AppCompatActivity() {
         monthYearText = findViewById(R.id.monthYearText)
         calendarRecyclerView = findViewById(R.id.calendarRecyclerView)
 
-        // 年月テキストをクリックで月選択ダイアログを表示
-        monthYearText.setOnClickListener {
-            showMonthYearPicker()
-        }
+        setupMonthYearSpinner()
 
+        // 矢印ボタンでの月移動
         findViewById<ImageView>(R.id.prevMonthButton).setOnClickListener {
-            calendar.add(Calendar.MONTH, -1)
-            updateCalendar()
+            if (currentMonthIndex < monthYearList.size - 1) {
+                currentMonthIndex++
+                updateFromSpinner()
+            }
         }
 
         findViewById<ImageView>(R.id.nextMonthButton).setOnClickListener {
-            calendar.add(Calendar.MONTH, 1)
-            updateCalendar()
+            if (currentMonthIndex > 0) {
+                currentMonthIndex--
+                updateFromSpinner()
+            }
         }
+    }
+
+    /** プルダウンの設定 */
+    private fun setupMonthYearSpinner() {
+        val monthLabels = monthYearList.map { (year, month) ->
+            val monthStr = if (month + 1 < 10) {
+                "${year}年　${month + 1}月"  // 1桁の月の前に全角スペースを追加
+            } else {
+                "${year}年 ${month + 1}月"
+            }
+            monthStr
+        }
+
+        val adapter = ArrayAdapter(
+            this,
+            R.layout.spinner_dropdown_item,
+            monthLabels
+        )
+
+        monthYearText.setAdapter(adapter)
+
+        // AutoCompleteTextView では onItemClickListener を使用する
+        monthYearText.setOnItemClickListener { parent, view, position, id ->
+            currentMonthIndex = position
+            updateFromSpinner()
+        }
+
+        // 初期値（今月）を表示
+        monthYearText.setText(monthLabels[currentMonthIndex], false)
+    }
+
+    /** スピナーの選択から更新 */
+    private fun updateFromSpinner() {
+        val (year, month) = monthYearList[currentMonthIndex]
+        calendar.set(Calendar.YEAR, year)
+        calendar.set(Calendar.MONTH, month)
+
+        val monthLabels = monthYearList.map { (y, m) ->
+            if (m + 1 < 10) {
+                "${y}年　${m + 1}月"  // 1桁の月の前に全角スペースを追加
+            } else {
+                "${y}年 ${m + 1}月"
+            }
+        }
+        monthYearText.setText(monthLabels[currentMonthIndex], false)
+
+        updateCalendar()
     }
 
     private fun setupGestureDetector() {
@@ -193,12 +250,16 @@ class CalendarActivity : AppCompatActivity() {
                     if (abs(diffX) > SWIPE_THRESHOLD && abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
                         if (diffX > 0) {
                             // 右スワイプ → 前月
-                            calendar.add(Calendar.MONTH, -1)
-                            updateCalendar()
+                            if (currentMonthIndex < monthYearList.size - 1) {
+                                currentMonthIndex++
+                                updateFromSpinner()
+                            }
                         } else {
                             // 左スワイプ → 次月
-                            calendar.add(Calendar.MONTH, 1)
-                            updateCalendar()
+                            if (currentMonthIndex > 0) {
+                                currentMonthIndex--
+                                updateFromSpinner()
+                            }
                         }
                         return true
                     }
@@ -213,47 +274,14 @@ class CalendarActivity : AppCompatActivity() {
         }
     }
 
-    private fun showMonthYearPicker() {
-        val currentYear = calendar.get(Calendar.YEAR)
-        val currentMonth = calendar.get(Calendar.MONTH)
-
-        // DatePickerDialogを使用して年月を選択
-        val datePickerDialog = DatePickerDialog(
-            this,
-            { _, year, month, _ ->
-                calendar.set(Calendar.YEAR, year)
-                calendar.set(Calendar.MONTH, month)
-                updateCalendar()
-            },
-            currentYear,
-            currentMonth,
-            1
-        )
-
-        // 日付選択を非表示にして月と年のみ選択可能に
-        try {
-            val dayPicker = datePickerDialog.datePicker
-            dayPicker.findViewById<View>(
-                resources.getIdentifier("day", "id", "android")
-            )?.visibility = View.GONE
-        } catch (e: Exception) {
-            // フォールバック: 日付ピッカーの非表示に失敗した場合
-        }
-
-        datePickerDialog.show()
-    }
-
     private fun setupCalendar() {
         calendarRecyclerView.layoutManager = GridLayoutManager(this, 7)
         calendarAdapter = CalendarAdapter(days, diaryList) { day ->
-            // 今日以前の日付のみクリック可能
             if (!isFutureDate(day)) {
                 openDayDetail(day)
             }
         }
         calendarRecyclerView.adapter = calendarAdapter
-
-        // 横線の罫線を追加
         calendarRecyclerView.addItemDecoration(CalendarItemDecoration())
     }
 
@@ -272,26 +300,20 @@ class CalendarActivity : AppCompatActivity() {
     }
 
     private fun updateCalendar() {
-        // 月と年を表示(例: 2025年 1月)
         val year = calendar.get(Calendar.YEAR)
         val month = calendar.get(Calendar.MONTH) + 1
-        monthYearText.text = "${year}年 ${month}月"
 
-        // カレンダーのデータを生成
         days.clear()
 
         val currentYear = calendar.get(Calendar.YEAR)
         val currentMonth = calendar.get(Calendar.MONTH)
 
-        // 月の最初の日
         val firstDayOfMonth = Calendar.getInstance()
         firstDayOfMonth.set(currentYear, currentMonth, 1)
-        val firstDayOfWeek = firstDayOfMonth.get(Calendar.DAY_OF_WEEK) - 1 // 日曜日=0
+        val firstDayOfWeek = firstDayOfMonth.get(Calendar.DAY_OF_WEEK) - 1
 
-        // 月の日数
         val maxDayInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
 
-        // 前月の日付を追加(グレーアウト)
         val prevMonth = Calendar.getInstance()
         prevMonth.set(currentYear, currentMonth, 1)
         prevMonth.add(Calendar.MONTH, -1)
@@ -302,20 +324,16 @@ class CalendarActivity : AppCompatActivity() {
             days.add(CalendarDay(day, false, currentYear, currentMonth - 1))
         }
 
-        // 当月の日付を追加
         for (day in 1..maxDayInMonth) {
             days.add(CalendarDay(day, true, currentYear, currentMonth))
         }
 
-        // 次月の日付を追加(6週分になるように)
-        val remainingDays = 42 - days.size // 6週 × 7日 = 42
+        val remainingDays = 42 - days.size
         for (day in 1..remainingDays) {
             days.add(CalendarDay(day, false, currentYear, currentMonth + 1))
         }
 
-        // アダプターにデータ変更を通知
         if (::calendarAdapter.isInitialized) {
-            // 日記データも最新であることを保証
             calendarAdapter.updateDiaries(diaryList)
             calendarAdapter.notifyDataSetChanged()
         }
@@ -324,31 +342,21 @@ class CalendarActivity : AppCompatActivity() {
     private fun openDayDetail(day: CalendarDay) {
         val dateString = String.format(Locale.getDefault(), "%04d/%02d/%02d", day.year, day.month + 1, day.day)
 
-        // 今日の日付かどうか判定
         val today = Calendar.getInstance()
         val isToday = (day.year == today.get(Calendar.YEAR) &&
                 day.month == today.get(Calendar.MONTH) &&
                 day.day == today.get(Calendar.DAY_OF_MONTH))
 
-        // その日の日記データが存在するかチェック
         val targetEntry = diaryList.find { it.date == dateString }
-
-        // データが存在し、かつ日記の中身が空でない(＝生成＆保存済み)場合のみ「完了」とみなす
         val hasContent = targetEntry != null && targetEntry.diaryContent.isNotEmpty()
 
         val intent = if (isToday) {
-            // 当日の場合
             if (hasContent) {
-                // 日記があれば詳細画面
                 Intent(this, DiaryDetailActivity::class.java)
             } else {
-                // 日記がなければ入力画面
                 Intent(this, DiaryInputActivity::class.java)
             }
         } else {
-            // 過去の場合
-            // 日記の有無に関わらず詳細画面を開く
-            // (詳細画面側で「日記がありません」などの表示対応が必要)
             Intent(this, DiaryDetailActivity::class.java)
         }
 
@@ -356,16 +364,11 @@ class CalendarActivity : AppCompatActivity() {
         intent.putExtra("month", day.month)
         intent.putExtra("day", day.day)
         startActivity(intent)
+        overridePendingTransition(0, 0)
     }
 
     private fun setupBottomNavigation() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-
-        // 初期選択状態のクリア
-        bottomNav.menu.setGroupCheckable(0, true, false)
-        for (i in 0 until bottomNav.menu.size()) {
-            bottomNav.menu.getItem(i).isChecked = false
-        }
         bottomNav.menu.setGroupCheckable(0, true, true)
 
         bottomNav.setOnItemSelectedListener { item ->
@@ -373,6 +376,7 @@ class CalendarActivity : AppCompatActivity() {
                 R.id.nav_stats -> {
                     val intent = Intent(this, EmotionAnalysisActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 R.id.nav_calendar -> {
@@ -381,12 +385,12 @@ class CalendarActivity : AppCompatActivity() {
                 R.id.nav_profile -> {
                     val intent = Intent(this, SettingsActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 else -> false
             }
         }
-        // calendarを選択状態にする
         bottomNav.selectedItemId = R.id.nav_calendar
     }
 }
@@ -400,11 +404,10 @@ data class CalendarDay(
 
 class CalendarAdapter(
     private val days: List<CalendarDay>,
-    private var diaries: List<DiaryEntry>, // ★追加: 日記データのリストを受け取る
+    private var diaries: List<DiaryEntry>,
     private val onDayClick: (CalendarDay) -> Unit
 ) : RecyclerView.Adapter<CalendarAdapter.DayViewHolder>() {
 
-    // ★追加: データを更新するためのメソッド
     fun updateDiaries(newDiaries: List<DiaryEntry>) {
         this.diaries = newDiaries
     }
@@ -435,7 +438,6 @@ class CalendarAdapter(
             holder.dayText.alpha = 0.3f
         }
 
-        // 今日の日付をハイライト
         val dayHighlight = holder.itemView.findViewById<FrameLayout>(R.id.dayHighlight)
         val today = Calendar.getInstance()
         val isToday = day.year == today.get(Calendar.YEAR) &&
@@ -449,20 +451,17 @@ class CalendarAdapter(
             dayHighlight.background = null
         }
 
-        // ★修正: JSONデータに基づいてアイコンを表示
-        // カレンダーの日付を文字列 "yyyy/MM/dd" に変換して検索
         val dateString = String.format(Locale.getDefault(), "%04d/%02d/%02d", day.year, day.month + 1, day.day)
         val diaryEntry = diaries.find { it.date == dateString }
 
         if (diaryEntry != null && diaryEntry.diaryContent?.isNotEmpty() == true) {
             holder.emotionIcon.visibility = View.VISIBLE
 
-            // 感情スコアに基づいてアイコンを変更
             val score = diaryEntry.emotionScore.toDoubleOrNull() ?: 0.0
             val iconRes = when {
                 score >= 0.6 -> R.drawable.emoji_very_happy
                 score >= 0.2 -> R.drawable.emoji_happy
-                score >= -0.2 -> R.drawable.emoji_neutral // 0.0 はここに含まれる
+                score >= -0.2 -> R.drawable.emoji_neutral
                 score >= -0.6 -> R.drawable.emoji_sad
                 else -> R.drawable.emoji_very_sad
             }
@@ -492,7 +491,6 @@ class CalendarItemDecoration : RecyclerView.ItemDecoration() {
         val position = parent.getChildAdapterPosition(view)
         val spanCount = 7
 
-        // 週の最後のアイテム(土曜日)の下にスペースを追加
         if ((position + 1) % spanCount == 0 && position < state.itemCount - 1) {
             outRect.bottom = 1
         }
@@ -506,7 +504,6 @@ class CalendarItemDecoration : RecyclerView.ItemDecoration() {
             val child = parent.getChildAt(i)
             val position = parent.getChildAdapterPosition(child)
 
-            // 週の最後(土曜日の下)に横線を描画
             if ((position + 1) % spanCount == 0 && position < state.itemCount - spanCount) {
                 val left = parent.paddingLeft.toFloat()
                 val right = (parent.width - parent.paddingRight).toFloat()

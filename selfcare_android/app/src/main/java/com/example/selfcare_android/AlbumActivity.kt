@@ -42,6 +42,7 @@ class AlbumActivity : AppCompatActivity() {
         val backBtn = findViewById<ImageView>(R.id.buttonClose)
         backBtn?.setOnClickListener {
             finish()
+            overridePendingTransition(0, 0)
         }
 
         recyclerView = findViewById(R.id.photoRecyclerView) // レイアウトのIDを確認してください (例: photoRecyclerView)
@@ -57,6 +58,7 @@ class AlbumActivity : AppCompatActivity() {
 //        setupTopBar()
         setupRecyclerView()
         setupBottomNavigation()
+        setCustomStatusBar()
 //        setupFab()
 //        loadPhotos()
     }
@@ -94,6 +96,7 @@ class AlbumActivity : AppCompatActivity() {
                     intent.putExtra("month", parts[1].toInt() - 1) // Calendarの月は0始まり
                     intent.putExtra("day", parts[2].toInt())
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -139,16 +142,19 @@ class AlbumActivity : AppCompatActivity() {
                 R.id.nav_stats -> {
                     val intent = Intent(this, EmotionAnalysisActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 R.id.nav_calendar -> {
                     val intent = Intent(this, CalendarActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 R.id.nav_profile -> {
                     val intent = Intent(this, SettingsActivity::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 else -> false
