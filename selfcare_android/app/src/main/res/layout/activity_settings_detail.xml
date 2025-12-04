@@ -81,7 +81,6 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="性別"
                     app:endIconMode="dropdown_menu">
 
                     <AutoCompleteTextView
@@ -358,7 +357,6 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:hint="日"
                         app:endIconMode="dropdown_menu">
 
                         <AutoCompleteTextView
@@ -382,7 +380,6 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:hint="日"
                         app:endIconMode="dropdown_menu">
 
                         <AutoCompleteTextView
